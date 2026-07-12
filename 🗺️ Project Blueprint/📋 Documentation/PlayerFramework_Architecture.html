@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAA Player Framework — Architecture Design Document</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #1f2428;
+    --bg4: #252b32;
+    --border: #30363d;
+    --border2: #3d444d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --accent: #f0883e;
+    --accent2: #ffa657;
+    --accent-dim: rgba(240,136,62,0.12);
+    --blue: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --teal: #39d353;
+    --yellow: #e3b341;
+    --danger-bg: rgba(248,81,73,0.1);
+    --warn-bg: rgba(227,179,65,0.1);
+    --info-bg: rgba(88,166,255,0.1);
+    --success-bg: rgba(63,185,80,0.1);
+    --radius: 6px;
+    --radius-lg: 10px;
+    --font-mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    --nav-width: 260px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    display: flex;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--nav-width);
+    min-height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    position: fixed;
+    top: 0; left: 0;
+    overflow-y: auto;
+    padding: 24px 0 40px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo .logo-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-logo .logo-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 20px 4px;
+    margin-top: 4px;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 20px;
+    font-size: 12.5px;
+    color: var(--text2);
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s;
+    border-left: 2px solid transparent;
+  }
+
+  .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+  .nav-link.active { color: var(--accent2); border-left-color: var(--accent); background: var(--accent-dim); }
+  .nav-num { font-size: 10px; color: var(--text3); font-family: var(--font-mono); min-width: 18px; }
+
+  /* ── MAIN CONTENT ── */
+  .content {
+    margin-left: var(--nav-width);
+    flex: 1;
+    padding: 0;
+  }
+
+  .doc-header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 48px 64px 40px;
+  }
+
+  .doc-header .doc-type {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .doc-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.25;
+    margin-bottom: 14px;
+  }
+
+  .doc-header .doc-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: var(--text2);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .meta-badge .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  section {
+    padding: 56px 64px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-child { border-bottom: none; }
+
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(240,136,62,0.25);
+    padding: 4px 9px;
+    border-radius: var(--radius);
+    white-space: nowrap;
+    margin-top: 5px;
+  }
+
+  .section-header-text h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .section-header-text p {
+    font-size: 13.5px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin: 28px 0 10px;
+  }
+
+  h4 {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 18px 0 6px;
+  }
+
+  p { margin: 0 0 14px; color: var(--text); }
+  p:last-child { margin-bottom: 0; }
+
+  ul, ol {
+    padding-left: 22px;
+    margin: 8px 0 14px;
+  }
+
+  li {
+    margin-bottom: 5px;
+    color: var(--text);
+    line-height: 1.65;
+  }
+
+  li strong { color: var(--accent2); font-weight: 600; }
+
+  strong { color: var(--accent2); font-weight: 600; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--accent2);
+  }
+
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  pre .c  { color: var(--text3); font-style: italic; }
+  pre .k  { color: var(--blue); }
+  pre .t  { color: var(--purple); }
+  pre .s  { color: var(--green); }
+  pre .n  { color: var(--teal); }
+  pre .a  { color: var(--accent2); }
+  pre .folder { color: var(--blue); font-weight: 500; }
+  pre .file   { color: var(--text2); }
+  pre .iface  { color: var(--purple); }
+  pre .cfg    { color: var(--yellow); }
+
+  /* Callout boxes */
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    border-left: 3px solid;
+    margin: 16px 0;
+  }
+
+  .callout-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .callout.warn   { background: var(--warn-bg); border-color: var(--yellow); }
+  .callout.danger { background: var(--danger-bg); border-color: var(--red); }
+  .callout.info   { background: var(--info-bg); border-color: var(--blue); }
+  .callout.good   { background: var(--success-bg); border-color: var(--green); }
+  .callout.accent { background: var(--accent-dim); border-color: var(--accent); }
+
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; font-size: 13px; margin-bottom: 3px; }
+  .callout-body p, .callout-body li { font-size: 13.5px; margin-bottom: 4px; color: var(--text); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 14px 0 20px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  th {
+    background: var(--bg3);
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  td code { font-size: 11.5px; }
+  td strong { color: var(--accent2); }
+
+  /* Cards */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+  }
+
+  .card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent2);
+    margin: 0 0 8px;
+  }
+
+  .card p, .card li {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .card ul { padding-left: 16px; margin: 6px 0 0; }
+
+  /* Subsystem pill grid */
+  .pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+  }
+
+  .pill {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+
+  .pill-blue   { background: rgba(88,166,255,0.1);   border-color: rgba(88,166,255,0.3);   color: var(--blue); }
+  .pill-purple { background: rgba(188,140,255,0.1);  border-color: rgba(188,140,255,0.3);  color: var(--purple); }
+  .pill-green  { background: rgba(63,185,80,0.1);    border-color: rgba(63,185,80,0.3);    color: var(--green); }
+  .pill-amber  { background: rgba(240,136,62,0.1);   border-color: rgba(240,136,62,0.3);   color: var(--accent2); }
+  .pill-red    { background: rgba(248,81,73,0.1);    border-color: rgba(248,81,73,0.3);    color: var(--red); }
+  .pill-teal   { background: rgba(57,211,83,0.08);   border-color: rgba(57,211,83,0.25);   color: var(--teal); }
+  .pill-yellow { background: rgba(227,179,65,0.1);   border-color: rgba(227,179,65,0.3);   color: var(--yellow); }
+
+  /* Dev order steps */
+  .dev-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dev-step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+  }
+
+  .step-content h4 { margin: 0 0 4px; font-size: 14px; color: var(--text); }
+  .step-content p  { font-size: 13px; color: var(--text2); margin: 0; }
+  .step-content .why { color: var(--accent); font-style: italic; }
+
+  .phase-1 .step-num { background: rgba(63,185,80,0.2);  color: var(--green); border: 1px solid rgba(63,185,80,0.4); }
+  .phase-2 .step-num { background: rgba(88,166,255,0.2); color: var(--blue);  border: 1px solid rgba(88,166,255,0.4); }
+  .phase-3 .step-num { background: rgba(188,140,255,0.2);color: var(--purple);border: 1px solid rgba(188,140,255,0.4); }
+  .phase-4 .step-num { background: var(--accent-dim);    color: var(--accent);border: 1px solid rgba(240,136,62,0.4); }
+  .phase-0 .step-num { background: rgba(46,184,166,0.2); color: #2eb8a6;       border: 1px solid rgba(46,184,166,0.4); }
+  .phase-5 .step-num { background: rgba(248,81,73,0.2);  color: var(--red);    border: 1px solid rgba(248,81,73,0.4); }
+  .phase-6 .step-num { background: rgba(227,179,65,0.2); color: var(--yellow); border: 1px solid rgba(227,179,65,0.4); }
+
+  /* Arch layer diagram */
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 20px 0;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+  }
+
+  .arch-layer-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    min-width: 120px;
+    color: var(--text3);
+  }
+
+  .arch-layer-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Risk severity */
+  .risk-high   { border-left: 3px solid var(--red); }
+  .risk-medium { border-left: 3px solid var(--yellow); }
+  .risk-low    { border-left: 3px solid var(--green); }
+
+  .risk-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+
+  .risk-item h4 { margin: 0 0 5px; font-size: 13.5px; }
+  .risk-item p  { font-size: 13px; color: var(--text2); margin: 0 0 5px; }
+  .risk-item .mitigation { font-size: 12.5px; color: var(--green); }
+
+  .severity-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .sev-high   { background: rgba(248,81,73,0.2);   color: var(--red); }
+  .sev-medium { background: rgba(227,179,65,0.2);  color: var(--yellow); }
+  .sev-low    { background: rgba(63,185,80,0.2);   color: var(--green); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .content { margin-left: 0; }
+    section { padding: 36px 28px; }
+    .doc-header { padding: 36px 28px; }
+  }
+</style>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-tag">Architecture Document</div>
+    <div class="logo-title">AAA Player Framework<br>Design Reference</div>
+  </div>
+
+  <div class="nav-section-label">Sections</div>
+  <a class="nav-link" href="#s1"><span class="nav-num">01</span>High-Level Vision</a>
+  <a class="nav-link" href="#s2"><span class="nav-num">02</span>Software Architecture</a>
+  <a class="nav-link" href="#s3"><span class="nav-num">03</span>Folder Structure</a>
+  <a class="nav-link" href="#s4"><span class="nav-num">04</span>Subsystem Hierarchy</a>
+  <a class="nav-link" href="#s5"><span class="nav-num">05</span>Subsystem Responsibilities</a>
+  <a class="nav-link" href="#s6"><span class="nav-num">06</span>Dependency Map</a>
+  <a class="nav-link" href="#s7"><span class="nav-num">07</span>Communication Flow</a>
+  <a class="nav-link" href="#s8"><span class="nav-num">08</span>Design Patterns</a>
+  <a class="nav-link" href="#s9"><span class="nav-num">09</span>State Machine Design</a>
+  <a class="nav-link" href="#s10"><span class="nav-num">10</span>Development Order</a>
+  <a class="nav-link" href="#s11"><span class="nav-num">11</span>Scalability Planning</a>
+  <a class="nav-link" href="#s12"><span class="nav-num">12</span>Performance Risks</a>
+  <a class="nav-link" href="#s13"><span class="nav-num">13</span>Mistakes To Avoid</a>
+  <a class="nav-link" href="#s14"><span class="nav-num">14</span>AAA Best Practices</a>
+  <a class="nav-link" href="#s15"><span class="nav-num">15</span>Recommendations</a>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <div class="doc-header">
+    <div class="doc-type">Technical Architecture Document · Lead Systems Engineering</div>
+    <h1>AAA Player Framework<br>Architecture Design</h1>
+    <div class="doc-meta">
+      <span class="meta-badge"><span class="dot" style="background:#3fb950"></span>Unity 6 / URP Target</span>
+      <span class="meta-badge"><span class="dot" style="background:#58a6ff"></span>FPS / TPS / Multiplayer-Ready</span>
+      <span class="meta-badge"><span class="dot" style="background:#f0883e"></span>Reusable Framework — Multi-Game</span>
+      <span class="meta-badge"><span class="dot" style="background:#bc8cff"></span>Pre-Production Architecture Phase</span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s1">
+    <div class="section-header">
+      <div class="section-num">§ 01</div>
+      <div class="section-header-text">
+        <h2>High-Level System Vision</h2>
+        <p>What this framework IS — and critically, what it is NOT.</p>
+      </div>
+    </div>
+
+    <div class="callout accent">
+      <div class="callout-icon">◈</div>
+      <div class="callout-body">
+        <strong>Core Philosophy</strong>
+        <p>This is not a "Player Controller." It is a <strong>Player Entity Composition Platform</strong> — a runtime-composable infrastructure on which any game's player experience is built. The framework itself is game-agnostic. Individual games provide data, configurations, and game-specific overrides. The framework provides structure, contracts, and orchestration.</p>
+      </div>
+    </div>
+
+    <h3>Framework Mission Statement</h3>
+    <p>Design a runtime system where a fully-featured player entity can be assembled from independently developed, independently testable, independently replaceable subsystems — all orchestrated through a thin, non-prescriptive coordinator that carries no gameplay logic of its own.</p>
+
+    <h3>Three Layers of Thinking</h3>
+
+    <div class="arch-layers">
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="color:var(--green)">FRAMEWORK CORE</div>
+        <div class="arch-layer-content">
+          <span class="pill pill-green">Interfaces &amp; Contracts</span>
+          <span class="pill pill-green">Event Bus Infrastructure</span>
+          <span class="pill pill-green">Subsystem Registry</span>
+          <span class="pill pill-green">Base Classes</span>
+          <span class="pill pill-green">Lifecycle Management</span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="color:var(--blue)">SUBSYSTEMS</div>
+        <div class="arch-layer-content">
+          <span class="pill pill-blue">Movement</span>
+          <span class="pill pill-blue">Camera</span>
+          <span class="pill pill-blue">Weapon</span>
+          <span class="pill pill-blue">Combat</span>
+          <span class="pill pill-blue">Animation</span>
+          <span class="pill pill-blue">Audio</span>
+          <span class="pill pill-blue">Input</span>
+          <span class="pill pill-blue">Interaction</span>
+          <span class="pill pill-blue">UI Comms</span>
+        </div>
+      </div>
+      <div class="arch-layer">
+        <div class="arch-layer-label" style="color:var(--accent)">GAME LAYER</div>
+        <div class="arch-layer-content">
+          <span class="pill pill-amber">Game-Specific Configs</span>
+          <span class="pill pill-amber">Custom Subsystem Implementations</span>
+          <span class="pill pill-amber">Game ScriptableObject Data</span>
+          <span class="pill pill-amber">Override Behaviours</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>What the Framework Explicitly Guarantees</h3>
+    <ul>
+      <li><strong>Any subsystem can be swapped</strong> without touching any other subsystem, provided the interface contract is honoured.</li>
+      <li><strong>Any subsystem can be disabled at runtime</strong> — e.g., disable MovementSubsystem during a cinematic, disable WeaponSubsystem in a safe zone.</li>
+      <li><strong>Game A and Game B</strong> share the framework core and abstract subsystem contracts, but inject entirely different implementations.</li>
+      <li><strong>A multiplayer game</strong> replaces IInputProvider with a NetworkInputProvider and replaces direct Transform writes with an INetworkTransform adapter — zero changes to gameplay subsystems.</li>
+      <li><strong>An AI-controlled player</strong> injects an AIInputProvider — again, zero changes downstream.</li>
+    </ul>
+
+    <h3>Non-Goals</h3>
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>This framework does NOT contain game logic.</strong>
+        <p>Quest systems, progression, inventory, dialogue, level design, AI enemy behaviour — these all live in game-specific code that reacts to events emitted by the player framework. The framework is agnostic to what game surrounds it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s2">
+    <div class="section-header">
+      <div class="section-num">§ 02</div>
+      <div class="section-header-text">
+        <h2>Recommended Software Architecture</h2>
+        <p>The hybrid architectural model chosen, with justification for every decision.</p>
+      </div>
+    </div>
+
+    <h3>Primary Architecture: Mediated Component Architecture (MCA)</h3>
+    <p>A deliberate synthesis of four established paradigms, chosen specifically for long-term maintainability in a multi-game, multi-developer environment:</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Pattern Layer</th><th>Applied To</th><th>Justification</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Mediator (via PlayerEntity)</strong></td><td>All subsystem orchestration</td><td>PlayerEntity is the sole communication hub. Subsystems never call each other directly. Eliminates N×(N-1) coupling links.</td></tr>
+          <tr><td><strong>Component Pattern</strong></td><td>All subsystems</td><td>Subsystems are self-contained components. Swap or extend any without touching others. Unity-native mental model for engineers.</td></tr>
+          <tr><td><strong>Event-Driven Architecture</strong></td><td>Cross-subsystem reactions, UI, Audio</td><td>Decouples producers from consumers. Subsystems emit typed events; any number of listeners react with zero awareness of each other.</td></tr>
+          <tr><td><strong>Interface Segregation</strong></td><td>All subsystem contracts</td><td>Systems depend on the thinnest possible contract. IMovementSubsystem can have 4 methods while the concrete class has 40.</td></tr>
+          <tr><td><strong>State Machine (Hierarchical)</strong></td><td>Movement, Combat, Weapon states</td><td>Eliminates boolean flag hell. Prevents invalid state combinations. Provides clean transition hooks.</td></tr>
+          <tr><td><strong>Data-Driven via ScriptableObjects</strong></td><td>All configuration data</td><td>Designers tune behaviour without code changes. Multiple games use the same subsystem code with different data assets.</td></tr>
+          <tr><td><strong>Service Locator (scoped)</strong></td><td>Cross-cutting concerns (Audio, Debug)</td><td>Avoids deep dependency chains for globally-needed services. Bounded to framework scope — not a global singleton.</td></tr>
+          <tr><td><strong>Strategy Pattern</strong></td><td>Camera modes, Surface detection, Weapon types</td><td>Runtime-swappable algorithms. FPS→TPS camera switch is a strategy swap, not a structural change.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Key Architectural Decisions &amp; Rationale</h3>
+
+    <h4>Decision 1 — Subsystems Are NOT MonoBehaviours</h4>
+    <div class="callout info">
+      <div class="callout-icon">ℹ</div>
+      <div class="callout-body">
+        <p>Subsystems are plain C# classes implementing <code>IPlayerSubsystem</code>. The PlayerEntity MonoBehaviour owns and drives them. This means: no GetComponent overhead, no Unity message routing, no accidental coupling through Unity lifecycle events, clean unit testability without spinning up a scene, and full control over update order. Only the root <code>PlayerEntity</code> and subsystems that truly require Unity callbacks (e.g. Trigger detection in InteractionSubsystem) are MonoBehaviours.</p>
+      </div>
+    </div>
+
+    <h4>Decision 2 — Input is Fully Abstracted</h4>
+    <p>The movement system, combat system, and weapon system NEVER read from Unity's Input System directly. They receive a <code>PlayerInputFrame</code> struct from an injected <code>IInputProvider</code>. This single decision makes the entire player framework playable by: human players, AI agents, network authority, and replay systems — all without modifying a single subsystem line.</p>
+
+    <h4>Decision 3 — Three Communication Tiers</h4>
+    <p>All communication between subsystems is categorised into one of three tiers, chosen by latency and coupling requirements. Mixing these tiers inappropriately is the most common source of hidden coupling. (See Section 7 for the full communication model.)</p>
+
+    <h4>Decision 4 — Composition Over Inheritance for Weapons</h4>
+    <p>A weapon is a runtime composition of modules. There is no <code>SniperRifle : AssaultRifle : BaseWeapon</code> hierarchy. Instead, a <code>WeaponInstance</code> is assembled from a <code>WeaponDefinition</code> ScriptableObject and a set of modules (Shooting, Reload, Recoil, ADS, Ammo). This eliminates class explosion and allows for exotic weapon combinations (e.g., a melee weapon that also shoots) with zero new classes.</p>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s3">
+    <div class="section-header">
+      <div class="section-num">§ 03</div>
+      <div class="section-header-text">
+        <h2>Folder Structure</h2>
+        <p>Namespace-aligned, assembly-definition-separated, game-layer isolated.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠</div>
+      <div class="callout-body">
+        <strong>Assembly Definitions Are Mandatory</strong>
+        <p>Every top-level folder in the Framework requires its own <code>.asmdef</code>. This enforces encapsulation at compile time, prevents game-layer code from accidentally referencing framework internals, dramatically speeds up Unity's incremental compilation, and makes dependency violations visible immediately rather than at runtime.</p>
+      </div>
+    </div>
+
+<pre>
+Assets/
+├── <span class="folder">Framework/</span>                     <span class="c">← Framework.asmdef (core runtime)</span>
+│   ├── <span class="folder">Player/</span>
+│   │   ├── <span class="folder">Core/</span>
+│   │   │   ├── <span class="folder">Interfaces/</span>
+│   │   │   │   ├── <span class="iface">IPlayerEntity.cs</span>
+│   │   │   │   ├── <span class="iface">IPlayerSubsystem.cs</span>       <span class="c">← base contract for all subsystems</span>
+│   │   │   │   ├── <span class="iface">IMovementSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">ICameraSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">IWeaponSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">ICombatSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">IHealthSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">IInputProvider.cs</span>          <span class="c">← critical multiplayer seam</span>
+│   │   │   │   ├── <span class="iface">IAnimationSubsystem.cs</span>
+│   │   │   │   ├── <span class="iface">IAudioSubsystem.cs</span>
+│   │   │   │   └── <span class="iface">IInteractionSubsystem.cs</span>
+│   │   │   ├── <span class="folder">Base/</span>
+│   │   │   │   ├── <span class="file">PlayerEntityBase.cs</span>        <span class="c">← MonoBehaviour orchestrator</span>
+│   │   │   │   ├── <span class="file">PlayerSubsystemBase.cs</span>    <span class="c">← abstract base for all subsystems</span>
+│   │   │   │   └── <span class="file">SubsystemRegistry.cs</span>      <span class="c">← runtime subsystem lookup</span>
+│   │   │   ├── <span class="folder">Events/</span>
+│   │   │   │   ├── <span class="file">PlayerEventBus.cs</span>          <span class="c">← typed, struct-based event hub</span>
+│   │   │   │   ├── <span class="folder">Types/</span>
+│   │   │   │   │   ├── <span class="file">MovementEvents.cs</span>        <span class="c">← OnLanded, OnJumped, OnStateChanged</span>
+│   │   │   │   │   ├── <span class="file">CombatEvents.cs</span>
+│   │   │   │   │   ├── <span class="file">WeaponEvents.cs</span>
+│   │   │   │   │   ├── <span class="file">HealthEvents.cs</span>
+│   │   │   │   │   └── <span class="file">InputEvents.cs</span>
+│   │   │   └── <span class="folder">Data/</span>
+│   │   │       ├── <span class="cfg">PlayerFrameworkConfig.cs</span>  <span class="c">← [CreateAssetMenu] root config SO</span>
+│   │   │       └── <span class="file">PlayerInputFrame.cs</span>       <span class="c">← input snapshot struct (value type)</span>
+│   │   │
+│   │   ├── <span class="folder">Subsystems/</span>
+│   │   │   ├── <span class="folder">Movement/</span>
+│   │   │   │   ├── <span class="file">MovementSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">MovementConfig.cs</span>          <span class="c">← ScriptableObject</span>
+│   │   │   │   ├── <span class="folder">StateMachine/</span>
+│   │   │   │   │   ├── <span class="file">MovementStateMachine.cs</span>
+│   │   │   │   │   └── <span class="folder">States/</span>
+│   │   │   │   │       ├── <span class="file">GroundedState.cs</span>
+│   │   │   │   │       ├── <span class="file">IdleState.cs</span>
+│   │   │   │   │       ├── <span class="file">WalkState.cs</span>
+│   │   │   │   │       ├── <span class="file">SprintState.cs</span>
+│   │   │   │   │       ├── <span class="file">JumpState.cs</span>
+│   │   │   │   │       ├── <span class="file">AirborneState.cs</span>
+│   │   │   │   │       ├── <span class="file">CrouchState.cs</span>
+│   │   │   │   │       ├── <span class="file">ProneState.cs</span>
+│   │   │   │   │       ├── <span class="file">SlideState.cs</span>
+│   │   │   │   │       ├── <span class="file">ClimbState.cs</span>
+│   │   │   │   │       ├── <span class="file">LadderState.cs</span>
+│   │   │   │   │       ├── <span class="file">SwimState.cs</span>
+│   │   │   │   │       ├── <span class="file">MantleState.cs</span>
+│   │   │   │   │       └── <span class="file">VaultState.cs</span>
+│   │   │   │   └── <span class="folder">Modules/</span>
+│   │   │   │       ├── <span class="file">StaminaModule.cs</span>
+│   │   │   │       ├── <span class="file">FallDamageModule.cs</span>
+│   │   │   │       ├── <span class="file">SurfaceDetectionModule.cs</span>
+│   │   │   │       ├── <span class="file">HeadBobModule.cs</span>
+│   │   │   │       └── <span class="file">LeanModule.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Parkour/</span>
+│   │   │   │   ├── <span class="file">ParkourSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">ParkourConfig.cs</span>
+│   │   │   │   └── <span class="file">ParkourDetector.cs</span>         <span class="c">← geometry queries (vault/mantle)</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Combat/</span>
+│   │   │   │   ├── <span class="file">CombatSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">CombatConfig.cs</span>
+│   │   │   │   └── <span class="folder">Modules/</span>
+│   │   │   │       ├── <span class="file">HealthModule.cs</span>
+│   │   │   │       ├── <span class="file">DamageModule.cs</span>           <span class="c">← validates &amp; applies damage events</span>
+│   │   │   │       ├── <span class="file">HitReactionModule.cs</span>
+│   │   │   │       ├── <span class="file">DeathModule.cs</span>
+│   │   │   │       ├── <span class="file">MeleeModule.cs</span>
+│   │   │   │       └── <span class="file">ComboModule.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Weapon/</span>
+│   │   │   │   ├── <span class="file">WeaponSubsystem.cs</span>
+│   │   │   │   ├── <span class="file">WeaponManager.cs</span>           <span class="c">← slot management, switching logic</span>
+│   │   │   │   ├── <span class="file">WeaponInstance.cs</span>          <span class="c">← runtime composition of modules</span>
+│   │   │   │   ├── <span class="cfg">WeaponDefinition.cs</span>       <span class="c">← ScriptableObject weapon data</span>
+│   │   │   │   ├── <span class="folder">Modules/</span>
+│   │   │   │   │   ├── <span class="file">ShootingModule.cs</span>
+│   │   │   │   │   ├── <span class="file">ReloadModule.cs</span>
+│   │   │   │   │   ├── <span class="file">RecoilModule.cs</span>
+│   │   │   │   │   ├── <span class="file">ADSModule.cs</span>
+│   │   │   │   │   ├── <span class="file">SpreadModule.cs</span>
+│   │   │   │   │   └── <span class="file">AmmoModule.cs</span>
+│   │   │   │   ├── <span class="folder">Projectile/</span>
+│   │   │   │   │   ├── <span class="file">ProjectileSystem.cs</span>
+│   │   │   │   │   └── <span class="file">HitDetectionModule.cs</span>     <span class="c">← raycast or physics-based</span>
+│   │   │   │   └── <span class="folder">Effects/</span>
+│   │   │   │       └── <span class="file">WeaponVFXModule.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Camera/</span>
+│   │   │   │   ├── <span class="file">CameraSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">CameraConfig.cs</span>
+│   │   │   │   ├── <span class="folder">Modes/</span>
+│   │   │   │   │   ├── <span class="iface">ICameraMode.cs</span>
+│   │   │   │   │   ├── <span class="file">FPSCameraMode.cs</span>
+│   │   │   │   │   └── <span class="file">TPSCameraMode.cs</span>
+│   │   │   │   └── <span class="folder">Modules/</span>
+│   │   │   │       ├── <span class="file">DynamicFOVModule.cs</span>
+│   │   │   │       ├── <span class="file">LeanCameraModule.cs</span>
+│   │   │   │       ├── <span class="file">RecoilCameraModule.cs</span>
+│   │   │   │       └── <span class="file">CameraShakeModule.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Input/</span>
+│   │   │   │   ├── <span class="file">InputSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">InputConfig.cs</span>             <span class="c">← Input Action Asset reference</span>
+│   │   │   │   └── <span class="folder">Providers/</span>
+│   │   │   │       ├── <span class="file">HumanInputProvider.cs</span>
+│   │   │   │       ├── <span class="file">AIInputProvider.cs</span>
+│   │   │   │       └── <span class="file">ReplayInputProvider.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Animation/</span>
+│   │   │   │   ├── <span class="file">AnimationSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">AnimationConfig.cs</span>
+│   │   │   │   └── <span class="folder">Modules/</span>
+│   │   │   │       ├── <span class="file">IKModule.cs</span>
+│   │   │   │       ├── <span class="file">ProceduralAnimModule.cs</span>
+│   │   │   │       └── <span class="file">AnimationEventRelay.cs</span>    <span class="c">← bridges Animator events → EventBus</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Audio/</span>
+│   │   │   │   ├── <span class="file">PlayerAudioSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">PlayerAudioConfig.cs</span>
+│   │   │   │   └── <span class="folder">Modules/</span>
+│   │   │   │       ├── <span class="file">FootstepModule.cs</span>
+│   │   │   │       ├── <span class="file">BreathingModule.cs</span>
+│   │   │   │       └── <span class="file">CombatVoiceModule.cs</span>
+│   │   │   │
+│   │   │   ├── <span class="folder">Interaction/</span>
+│   │   │   │   ├── <span class="file">InteractionSubsystem.cs</span>
+│   │   │   │   ├── <span class="cfg">InteractionConfig.cs</span>
+│   │   │   │   ├── <span class="iface">IInteractable.cs</span>
+│   │   │   │   └── <span class="file">InteractionDetector.cs</span>
+│   │   │   │
+│   │   │   └── <span class="folder">UI/</span>
+│   │   │       ├── <span class="file">UICommsSubsystem.cs</span>        <span class="c">← translates events to UI data channels</span>
+│   │   │       └── <span class="folder">Channels/</span>
+│   │   │           ├── <span class="cfg">HealthDataChannel.cs</span>     <span class="c">← ScriptableObject reactive variable</span>
+│   │   │           ├── <span class="cfg">AmmoDataChannel.cs</span>
+│   │   │           └── <span class="cfg">StaminaDataChannel.cs</span>
+│   │   │
+│   │   ├── <span class="folder">Persistence/</span>
+│   │   │   ├── <span class="iface">ISaveable.cs</span>
+│   │   │   └── <span class="file">PlayerSaveData.cs</span>
+│   │   │
+│   │   └── <span class="folder">Multiplayer/</span>
+│   │       ├── <span class="iface">INetworkAdapter.cs</span>
+│   │       └── <span class="file">NetworkInputProvider.cs</span>
+│   │
+│   ├── <span class="folder">Debug/</span>                        <span class="c">← Framework.Debug.asmdef (editor + runtime)</span>
+│   │   ├── <span class="file">PlayerDebugger.cs</span>
+│   │   ├── <span class="file">SubsystemMonitor.cs</span>
+│   │   └── <span class="file">GizmoDrawer.cs</span>
+│   │
+│   └── <span class="folder">Shared/</span>                       <span class="c">← Framework.Shared.asmdef</span>
+│       ├── <span class="folder">EventChannels/</span>
+│       │   └── <span class="cfg">TypedEventChannel.cs</span>      <span class="c">← generic ScriptableObject event channel</span>
+│       ├── <span class="folder">ObjectPool/</span>
+│       │   └── <span class="file">ObjectPoolManager.cs</span>
+│       └── <span class="folder">Audio/</span>
+│           └── <span class="file">MainAudioManager.cs</span>       <span class="c">← game-wide audio manager (separate)</span>
+│
+├── <span class="folder">Tests/</span>                          <span class="c">← Framework.Tests.asmdef</span>
+│   ├── <span class="folder">EditMode/</span>
+│   │   └── <span class="folder">Subsystems/</span>
+│   │       ├── MovementSubsystemTests.cs
+│   │       ├── WeaponSystemTests.cs
+│   │       └── StateMachineTests.cs
+│   └── <span class="folder">Mocks/</span>
+│       ├── <span class="file">MockInputProvider.cs</span>
+│       ├── <span class="file">MockAudioSubsystem.cs</span>
+│       └── <span class="file">MockPlayerEntity.cs</span>
+│
+└── <span class="folder">Games/</span>                          <span class="c">← per-game implementations</span>
+    └── <span class="folder">[GameName]/</span>                   <span class="c">← Game.asmdef (references Framework.asmdef)</span>
+        ├── <span class="folder">Player/</span>
+        │   ├── <span class="file">GamePlayerEntity.cs</span>       <span class="c">← extends PlayerEntityBase</span>
+        │   └── <span class="folder">Config/</span>
+        │       ├── <span class="cfg">PlayerConfig.asset</span>
+        │       ├── <span class="cfg">MovementConfig.asset</span>
+        │       └── <span class="cfg">WeaponDefinitions/</span>
+        └── <span class="folder">Overrides/</span>                <span class="c">← game-specific subsystem overrides</span>
+</pre>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 4 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s4">
+    <div class="section-header">
+      <div class="section-num">§ 04</div>
+      <div class="section-header-text">
+        <h2>Subsystem Hierarchy</h2>
+        <p>Ownership, nesting, and module relationships.</p>
+      </div>
+    </div>
+
+<pre>
+PlayerEntity                                (MonoBehaviour — root orchestrator)
+│
+├── SubsystemRegistry                       (runtime lookup, lifecycle management)
+│
+├── PlayerEventBus                          (all typed events for this entity)
+│
+├── IInputProvider  ────────────────────    (INJECTED — human / AI / network / replay)
+│
+├── ── INPUT ──
+│   └── InputSubsystem                      owns: InputAction reading → PlayerInputFrame
+│
+├── ── MOVEMENT ──
+│   └── MovementSubsystem                   owns: CharacterController, physics
+│       ├── MovementStateMachine            owns: HSM state transitions
+│       ├── StaminaModule                   owns: stamina resource, drain/recover
+│       ├── SurfaceDetectionModule          owns: surface queries → surface type enum
+│       ├── FallDamageModule                owns: fall velocity tracking
+│       ├── HeadBobModule                   owns: procedural camera bob offset
+│       └── LeanModule                      owns: lean offset (feeds CameraSubsystem)
+│
+├── ── PARKOUR ──
+│   └── ParkourSubsystem                    owns: vault/mantle/climb detection + execution
+│       └── ParkourDetector                 owns: environment geometry queries
+│
+├── ── COMBAT ──
+│   └── CombatSubsystem                     owns: health, damage, death lifecycle
+│       ├── HealthModule                    owns: HP resource, shields, regen
+│       ├── DamageModule                    owns: damage validation, application
+│       ├── HitReactionModule               owns: hit direction data, ragdoll triggers
+│       ├── DeathModule                     owns: death event, respawn hooks
+│       ├── MeleeModule                     owns: hitbox activation, melee trace
+│       └── ComboModule                     owns: combo timing, sequence tracking
+│
+├── ── WEAPON ──
+│   └── WeaponSubsystem                     owns: weapon slots, active weapon
+│       ├── WeaponManager                   owns: equip/unequip, slot assignment
+│       └── WeaponInstance  [per weapon]    owns: runtime weapon state
+│           ├── ShootingModule              owns: fire rate, burst logic
+│           ├── ReloadModule                owns: reload state machine, timing
+│           ├── RecoilModule                owns: recoil pattern, recovery
+│           ├── ADSModule                   owns: ADS state, FOV target
+│           ├── AmmoModule                  owns: mag count, reserve ammo
+│           ├── SpreadModule                owns: accuracy cones, moving/standing
+│           ├── WeaponVFXModule             owns: muzzle flash, casing eject, impact VFX
+│           ├── ProjectileSystem            owns: projectile spawn, ballistics
+│           └── HitDetectionModule          owns: raycasts, hit registration, damage events
+│
+├── ── CAMERA ──
+│   └── CameraSubsystem                     owns: camera transform, active mode
+│       ├── ICameraMode (FPS | TPS)         strategy pattern, swappable
+│       ├── DynamicFOVModule                owns: FOV target management
+│       ├── LeanCameraModule                owns: lean rotation offset
+│       ├── RecoilCameraModule              owns: visual recoil application
+│       └── CameraShakeModule               owns: shake queue + decay
+│
+├── ── ANIMATION ──
+│   └── AnimationSubsystem                  owns: Animator parameter bridge
+│       ├── IKModule                        owns: hand IK, aim IK, foot IK
+│       ├── ProceduralAnimModule            owns: weapon sway, breathing, procedural layers
+│       └── AnimationEventRelay             owns: Animator event → EventBus bridge
+│
+├── ── AUDIO ──
+│   └── PlayerAudioSubsystem                owns: all player-sourced audio
+│       ├── FootstepModule                  owns: surface-aware footstep scheduling
+│       ├── BreathingModule                 owns: exertion-based breathing
+│       └── CombatVoiceModule               owns: pain, death, effort voice lines
+│
+├── ── INTERACTION ──
+│   └── InteractionSubsystem                owns: interaction detection, IInteractable calls
+│       └── InteractionDetector             owns: overlap/raycast detection zone
+│
+└── ── UI COMMS ──
+    └── UICommsSubsystem                    owns: event→data-channel translation for HUD
+        ├── HealthDataChannel  (SO)
+        ├── AmmoDataChannel    (SO)
+        └── StaminaDataChannel (SO)
+</pre>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 5 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s5">
+    <div class="section-header">
+      <div class="section-num">§ 05</div>
+      <div class="section-header-text">
+        <h2>Subsystem Responsibilities</h2>
+        <p>Precise ownership contracts — what each subsystem owns, and critically, what it does NOT own.</p>
+      </div>
+    </div>
+
+    <div class="callout accent">
+      <div class="callout-icon">◈</div>
+      <div class="callout-body">
+        <p>For every subsystem, the "does NOT own" list is as important as the "owns" list. Boundary discipline is how you prevent the slow gravitational collapse of responsibilities back into a god object over a 2-year production cycle.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Subsystem</th><th>Owns / Responsible For</th><th>Does NOT Own</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>InputSubsystem</strong></td>
+            <td>Reading from Unity Input System; assembling a <code>PlayerInputFrame</code> struct each frame; routing to IInputProvider abstraction; rebinding, action map management</td>
+            <td>Gameplay reactions to input; movement or combat logic; UI navigation input (separate action map)</td>
+          </tr>
+          <tr>
+            <td><strong>MovementSubsystem</strong></td>
+            <td>CharacterController velocity; grounded/airborne detection; physics resolution; stamina resource; surface type detection; fall velocity tracking; all locomotion states</td>
+            <td>Camera position; animation state; footstep audio; damage on landing; weapon ADS movement penalties (receives them as a modifier from WeaponSubsystem)</td>
+          </tr>
+          <tr>
+            <td><strong>ParkourSubsystem</strong></td>
+            <td>Environment geometry probing for vaultable/mantleable surfaces; transition into/out of vault and mantle movement; climb ledge detection and execution</td>
+            <td>Movement physics during parkour (delegates to MovementSubsystem states); animation (event-driven); input reading</td>
+          </tr>
+          <tr>
+            <td><strong>CombatSubsystem</strong></td>
+            <td>Health pool; damage validation and application; invincibility frames; death/revive lifecycle; melee hitbox timing; combo sequencing; hit reactions</td>
+            <td>Which weapon caused damage (receives <code>DamageData</code> event); respawn logic (game-layer concern); score/rewards; enemy AI reactions</td>
+          </tr>
+          <tr>
+            <td><strong>WeaponSubsystem</strong></td>
+            <td>Active weapon slot; weapon equip/unequip transitions; per-weapon module state; firing logic; reload state machines; recoil generation; ADS management; ammo tracking; hit detection raycasts; projectile spawning; weapon VFX; weapon audio</td>
+            <td>Health damage application (emits DamageEvents for other entities' CombatSubsystem to consume); animation (drives AnimationSubsystem via events); UI ammo display (via UICommsSubsystem)</td>
+          </tr>
+          <tr>
+            <td><strong>CameraSubsystem</strong></td>
+            <td>Camera Transform ownership; active camera mode (FPS/TPS); FOV management; lean offset integration; recoil offset integration; camera shake queue; pitch/yaw limits</td>
+            <td>Player position (reads from MovementSubsystem's output transform, does NOT move the player); input reading; game-specific cutscene cameras (those are separate systems)</td>
+          </tr>
+          <tr>
+            <td><strong>AnimationSubsystem</strong></td>
+            <td>All Animator parameter writes; blend tree configuration; animation layer weights; IK targets and weights; procedural animation layers (weapon sway, breathing offset); relay of Animator events to the EventBus. <strong>Full-body FPS rig</strong> — the character uses a complete skeleton (not arms-only), requiring spine/head IK to follow camera pitch, foot IK from Phase 3, and simultaneous hand IK on weapon grip points</td>
+            <td>Gameplay decisions (zero if/else for gameplay in this subsystem); trigger animation is always a reaction to an event or state change, never a direct call from another subsystem</td>
+          </tr>
+          <tr>
+            <td><strong>PlayerAudioSubsystem</strong></td>
+            <td>All audio sourced from the player entity; surface-aware footstep scheduling; exertion-based breathing; pain/death/effort voice lines; requests to MainAudioManager for pooled sources</td>
+            <td>Weapon audio (owned by WeaponVFXModule); environment audio; music; does not create or manage AudioSources directly (delegates to AudioPool)</td>
+          </tr>
+          <tr>
+            <td><strong>InteractionSubsystem</strong></td>
+            <td>Overlap detection around the player for IInteractable objects; maintaining the current interactable candidate; calling IInteractable.Interact() on player request; emitting interaction events</td>
+            <td>What happens on interaction (that is each IInteractable's concern); UI prompt display (event-driven to UICommsSubsystem)</td>
+          </tr>
+          <tr>
+            <td><strong>UICommsSubsystem</strong></td>
+            <td>Subscribing to player events; translating events into ScriptableObject data channel updates that UI elements directly observe; decoupling HUD from all gameplay subsystems</td>
+            <td>UI rendering logic; layout; any gameplay decisions; it is a pure translator</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 6 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s6">
+    <div class="section-header">
+      <div class="section-num">§ 06</div>
+      <div class="section-header-text">
+        <h2>Dependency Map</h2>
+        <p>Who is allowed to know about whom — and the rules that enforce it.</p>
+      </div>
+    </div>
+
+    <h3>Dependency Direction Rules</h3>
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>The Golden Rule: Dependencies only flow inward toward interfaces — never outward toward concrete implementations.</strong>
+        <p>No subsystem holds a reference to another subsystem's concrete type. All references are to interfaces. All inter-subsystem communication that isn't mediated by PlayerEntity goes through the EventBus. Violating this rule even once creates the invisible load-bearing wall that makes future refactoring impossible.</p>
+      </div>
+    </div>
+
+<pre>
+DEPENDENCY RULES (read as: X depends on Y)
+══════════════════════════════════════════════════════════════════
+
+PlayerEntity              → ALL subsystems via their INTERFACES only
+                          → PlayerEventBus (owns it)
+                          → SubsystemRegistry
+
+MovementSubsystem         → IInputProvider (interface — never concrete PlayerInput)
+                          → PlayerEventBus (to emit movement events)
+                          → MovementConfig (ScriptableObject)
+                          → CharacterController (Unity component, owned directly)
+
+CameraSubsystem           → PlayerEventBus (subscribes to state changes)
+                          → CameraConfig (ScriptableObject)
+                          → LeanModule output (via shared data struct, NOT module ref)
+
+WeaponSubsystem           → IInputProvider
+                          → PlayerEventBus
+                          → ProjectileSystem (owns it, no other deps)
+                          → WeaponDefinition assets (ScriptableObjects)
+
+CombatSubsystem           → PlayerEventBus (subscribes to DamageEvent)
+                          → CombatConfig (ScriptableObject)
+                          → ZERO knowledge of WeaponSubsystem
+
+AnimationSubsystem        → PlayerEventBus (subscribes to ALL state events)
+                          → Animator (Unity component, owned directly)
+                          → AnimationConfig
+
+PlayerAudioSubsystem      → PlayerEventBus (subscribes to movement, combat, weapon events)
+                          → MainAudioManager (via IMainAudioManager interface)
+                          → SurfaceType data (comes via event payload, not direct query)
+
+InteractionSubsystem      → IInputProvider (interact button)
+                          → PlayerEventBus
+
+UICommsSubsystem          → PlayerEventBus (subscribes)
+                          → Data channel ScriptableObjects (writes to them)
+                          → ZERO knowledge of HUD or UI classes
+
+══════════════════════════════════════════════════════════════════
+FORBIDDEN DEPENDENCIES (these will be caught by .asmdef isolation)
+══════════════════════════════════════════════════════════════════
+
+MovementSubsystem    ✕→  WeaponSubsystem    (use events for ADS slow modifier)
+CombatSubsystem      ✕→  WeaponSubsystem    (damage comes as event payload)
+AnimationSubsystem   ✕→  MovementSubsystem  (listen to events, not direct state)
+AudioSubsystem       ✕→  WeaponSubsystem    (weapon audio events carry AudioClip refs)
+UICommsSubsystem     ✕→  any UI class       (one-way: framework → UI, never UI → framework)
+Any Subsystem        ✕→  GameLayer classes  (framework must remain game-agnostic)
+</pre>
+
+    <h3>Dependency Injection Strategy</h3>
+    <p>The <code>PlayerEntity</code> assembles and injects all dependencies at <strong>composition time</strong> (Awake/Start). Subsystems receive their dependencies through constructor parameters or an <code>Initialize(IPlayerEntity ctx)</code> method. No subsystem uses <code>GetComponent</code>, <code>FindObjectOfType</code>, or any scene-traversal to find its dependencies.</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>Injected at Construction</h4>
+        <ul>
+          <li>IInputProvider → all input consumers</li>
+          <li>PlayerEventBus → all subsystems</li>
+          <li>ScriptableObject configs → respective subsystems</li>
+          <li>IMainAudioManager → PlayerAudioSubsystem</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Resolved at Runtime</h4>
+        <ul>
+          <li>CharacterController (scene component, owned by PlayerEntity)</li>
+          <li>Animator (scene component, owned by PlayerEntity)</li>
+          <li>Camera (scene component, owned by CameraSubsystem)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Never Resolved Via</h4>
+        <ul>
+          <li><code>GetComponent&lt;T&gt;</code> across subsystems</li>
+          <li><code>FindObjectOfType&lt;T&gt;</code></li>
+          <li>Static singleton references inside subsystems</li>
+          <li>String-keyed lookups</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 7 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s7">
+    <div class="section-header">
+      <div class="section-num">§ 07</div>
+      <div class="section-header-text">
+        <h2>Communication Flow Between Systems</h2>
+        <p>The three-tier model. Every data pathway categorised by latency, coupling, and contract strength.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tier</th><th>Mechanism</th><th>When To Use</th><th>Examples</th><th>Risk If Overused</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tier 1</strong><br><span style="color:var(--green);font-size:11px">Direct Call</span></td>
+            <td>Interface method call via PlayerEntity or direct owned-reference</td>
+            <td>Same-frame, guaranteed delivery. Orchestration calls from PlayerEntity to its subsystems. Tight owner→owned dependency is known and stable.</td>
+            <td><code>movementSubsystem.ApplyExternalForce(v)</code><br><code>cameraSubsystem.SetMode(CameraMode.TPS)</code></td>
+            <td>Creates coupling. Only acceptable from the mediator (PlayerEntity) downward, or within an owner to its own modules.</td>
+          </tr>
+          <tr>
+            <td><strong>Tier 2</strong><br><span style="color:var(--blue);font-size:11px">Event Bus</span></td>
+            <td>Typed struct events on PlayerEventBus. Zero-allocation when using value type events.</td>
+            <td>Cross-subsystem reactions. Producer doesn't need to know consumers. Any number of listeners. Asynchronous reaction is acceptable.</td>
+            <td><code>eventBus.Emit(new PlayerLandedEvent{...})</code><br>→ AudioSubsystem plays landing sound<br>→ AnimationSubsystem triggers land anim<br>→ CombatSubsystem applies fall damage</td>
+            <td>If used for every communication, hot paths get overhead. Reserve for meaningful state transitions, not per-frame data.</td>
+          </tr>
+          <tr>
+            <td><strong>Tier 3</strong><br><span style="color:var(--yellow);font-size:11px">Data Channels</span></td>
+            <td>ScriptableObject reactive variables. Any asset can hold a reference. Survives scene changes. True runtime decoupling.</td>
+            <td>UI data binding. Persistent state shared across scenes. Any consumer that shouldn't exist in the same scene dependency graph as the producer.</td>
+            <td>HealthDataChannel (SO) ← CombatSubsystem writes<br>→ HUD HealthBar reads (no scene dep on CombatSubsystem)<br>→ GameOver screen reads</td>
+            <td>Not suitable for high-frequency data (per-frame). ScriptableObject writes incur minor overhead vs raw float.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Critical Communication Flows (Traced End-to-End)</h3>
+
+<pre>
+FLOW 1: Player fires a weapon
+─────────────────────────────────────────────────────────────────
+InputSubsystem      → PlayerInputFrame { firePressed = true }
+PlayerEntity        → movementSubsystem.Tick(inputFrame)    [Tier 1]
+WeaponSubsystem     → ShootingModule.TryFire()
+ShootingModule      → HitDetectionModule.PerformRaycast()
+HitDetectionModule  → [hit registered]
+HitDetectionModule  → Emit(WeaponFiredEvent{...})            [Tier 2]
+HitDetectionModule  → Emit(DamageDealtEvent{target, dmg})   [Tier 2]
+                   
+[CONSUMERS of WeaponFiredEvent]:
+  AnimationSubsystem  → plays fire animation layer
+  PlayerAudioSubsystem→ plays fire sound
+  WeaponVFXModule     → spawns muzzle flash, ejects casing
+  RecoilModule        → applies recoil offset to camera input
+  AmmoModule          → decrements magazine count
+  UICommsSubsystem    → writes to AmmoDataChannel           [Tier 3]
+                     → HUD ammo display updates
+
+[CONSUMERS of DamageDealtEvent]:
+  Target's CombatSubsystem → HealthModule.ApplyDamage()
+  Target's AnimationSubsystem → plays hit reaction
+  Target's AudioSubsystem → plays hit sound
+
+─────────────────────────────────────────────────────────────────
+FLOW 2: Player dies
+─────────────────────────────────────────────────────────────────
+CombatSubsystem     → HealthModule.ApplyDamage() → HP = 0
+DeathModule         → Emit(PlayerDiedEvent{...})             [Tier 2]
+                   
+[CONSUMERS]:
+  MovementSubsystem   → DisableInput(), enter death state
+  WeaponSubsystem     → DisableWeapons()
+  AnimationSubsystem  → plays death animation
+  PlayerAudioSubsystem→ plays death voice line
+  CameraSubsystem     → triggers death camera mode
+  UICommsSubsystem    → writes death flag to channel        [Tier 3]
+  GameLayer           → handles respawn, score, progression (NOT framework concern)
+
+─────────────────────────────────────────────────────────────────
+FLOW 3: Weapon reload
+─────────────────────────────────────────────────────────────────
+InputSubsystem      → inputFrame { reloadPressed = true }
+WeaponSubsystem     → ReloadModule.TryReload()
+ReloadModule        → WeaponStateMachine.Transition(RELOADING)
+ReloadModule        → Emit(ReloadStartedEvent)               [Tier 2]
+
+[CONSUMERS of ReloadStartedEvent]:
+  AnimationSubsystem  → plays reload animation
+  PlayerAudioSubsystem→ plays reload sound
+  UICommsSubsystem    → shows reload indicator
+
+[After reload completes — timer or animation event]:
+AnimationEventRelay  → Emit(ReloadCompleteAnimEvent)        [Tier 2]
+ReloadModule         → AmmoModule.RefillMagazine()
+ReloadModule         → Emit(ReloadCompletedEvent)
+UICommsSubsystem     → updates AmmoDataChannel
+</pre>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 8 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s8">
+    <div class="section-header">
+      <div class="section-num">§ 08</div>
+      <div class="section-header-text">
+        <h2>Design Pattern Per System</h2>
+        <p>One primary pattern per subsystem — chosen for fit, not fashion. With explicit justification.</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Subsystem</th><th>Primary Pattern</th><th>Secondary</th><th>Justification</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Player Entity</strong></td>
+            <td>Mediator</td>
+            <td>Composite</td>
+            <td>PlayerEntity knows all subsystems but subsystems don't know each other. All orchestration flows through one hub. This is not a god class — it carries zero gameplay logic. Its only job is to route, order, and own subsystems.</td>
+          </tr>
+          <tr>
+            <td><strong>Input</strong></td>
+            <td>Adapter</td>
+            <td>—</td>
+            <td>Unity's New Input System has its own API shape. The Adapter wraps it into a <code>PlayerInputFrame</code> value type that the rest of the framework depends on. When Unity changes their Input API (it has happened), only the adapter changes. All downstream code is untouched.</td>
+          </tr>
+          <tr>
+            <td><strong>Movement</strong></td>
+            <td>Hierarchical State Machine</td>
+            <td>Strategy (surface detection)</td>
+            <td>HSM prevents invalid state combinations that boolean flags cannot. You cannot be both Prone and Swimming. Cannot be Sliding and Climbing. The state machine enforces these invariants structurally, not via if/else guards scattered across the codebase.</td>
+          </tr>
+          <tr>
+            <td><strong>Parkour</strong></td>
+            <td>State Machine + Strategy</td>
+            <td>Template Method</td>
+            <td>Each parkour action (vault, mantle, climb) follows the same Detect → Validate → Enter → Execute → Exit template, but with different geometry queries and movement curves. Template Method extracts the invariant scaffold; strategies provide the per-action variation.</td>
+          </tr>
+          <tr>
+            <td><strong>Combat / Health</strong></td>
+            <td>Observer (events)</td>
+            <td>Chain of Responsibility (damage pipeline)</td>
+            <td>Damage should flow through a pipeline of modifiers (armor, shields, invincibility, damage type resistances) before application. Chain of Responsibility models this cleanly — each link in the chain can modify or absorb the damage. Observers react after the final value is settled.</td>
+          </tr>
+          <tr>
+            <td><strong>Weapon</strong></td>
+            <td>Composition over Inheritance</td>
+            <td>Factory (WeaponInstance assembly)</td>
+            <td>Weapon behaviours are modules composed at runtime from a WeaponDefinition ScriptableObject. A factory (or the WeaponManager) assembles the correct module combination. Adding a new weapon variant requires zero new classes — only a new ScriptableObject with different module configs.</td>
+          </tr>
+          <tr>
+            <td><strong>Weapon State</strong></td>
+            <td>State Machine (per weapon)</td>
+            <td>—</td>
+            <td>Each WeaponInstance has its own state machine: Idle → Firing → Reloading → Switching → Holstered. You cannot reload while already reloading. Cannot fire while switching. The state machine enforces this structurally — no guard clauses needed in fire/reload methods.</td>
+          </tr>
+          <tr>
+            <td><strong>Camera</strong></td>
+            <td>Strategy (camera modes)</td>
+            <td>Decorator (camera effects)</td>
+            <td>FPS and TPS camera modes are interchangeable strategies implementing ICameraMode. The CameraSubsystem doesn't care which is active. Camera effects (shake, recoil, lean) are stackable decorators applied as ordered transforms to the final camera position, not mixed into mode logic.</td>
+          </tr>
+          <tr>
+            <td><strong>Animation</strong></td>
+            <td>Pure Observer / Reactive</td>
+            <td>—</td>
+            <td>AnimationSubsystem contains ZERO gameplay logic. It only subscribes to events and player state data, then translates those into Animator parameters. This is critical: if the Animator asset is replaced (e.g. FPS → TPS rig), only the AnimationSubsystem changes. No gameplay code is touched.</td>
+          </tr>
+          <tr>
+            <td><strong>Audio</strong></td>
+            <td>Observer + Object Pool</td>
+            <td>Strategy (surface audio)</td>
+            <td>Audio reacts to events — it never drives them. The object pool provides pooled AudioSources — never AudioSource.PlayClipAtPoint which creates/destroys GameObjects. Surface-aware footsteps use a Strategy pattern: a FootstepProfile ScriptableObject provides the correct clip set per surface type.</td>
+          </tr>
+          <tr>
+            <td><strong>Interaction</strong></td>
+            <td>Visitor</td>
+            <td>—</td>
+            <td>The player (visitor) visits interactables. Each IInteractable accepts the visit and knows what to do. The interaction system has zero knowledge of what any specific interactable does. Adding a new interactable type requires zero changes to the framework — only a new IInteractable implementation.</td>
+          </tr>
+          <tr>
+            <td><strong>UI Comms</strong></td>
+            <td>Reactive Data Binding (via SO channels)</td>
+            <td>—</td>
+            <td>ScriptableObject data channels are the cleanest Unity-native solution for framework→UI communication. The HUD holds a reference to the HealthDataChannel asset — not to any gameplay class. The HUD can be rebuilt from scratch with no change to the player framework.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 9 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s9">
+    <div class="section-header">
+      <div class="section-num">§ 09</div>
+      <div class="section-header-text">
+        <h2>State Machine Design</h2>
+        <p>Hierarchical State Machines — the architecture that eliminates boolean flag hell.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠</div>
+      <div class="callout-body">
+        <strong>Flat State Machines Do Not Scale</strong>
+        <p>A flat state machine with 15 movement states requires up to 15×14 = 210 transition checks. Adding state 16 requires touching every existing state. A Hierarchical State Machine (HSM) groups states logically, so a new sub-state in an existing group only requires transitions within that group. AAA movement systems require HSMs — there is no viable alternative at this scope.</p>
+      </div>
+    </div>
+
+    <h3>Meta State Machine (Outermost Layer)</h3>
+    <p>Governs the player entity's top-level behavioural mode. All other state machines only run within the <strong>Alive</strong> meta-state.</p>
+
+<pre>
+MetaStateMachine
+├── ALIVE          (active during normal gameplay)
+│   └── [LocomotionHSM, CombatHSM, WeaponHSM all active here]
+├── DEAD           (death animation, awaiting respawn)
+│   └── [All input disabled, camera enters death mode]
+├── IN_VEHICLE     (player operating a vehicle)
+│   └── [MovementSubsystem replaced by VehicleMovementSubsystem]
+└── IN_CUTSCENE    (scripted animation, input blocked)
+    └── [Camera may be under cinematic control]
+</pre>
+
+    <h3>Locomotion Hierarchical State Machine</h3>
+<pre>
+LocomotionHSM
+├── GROUNDED  ──────────────────────────────── (parent state — on a walkable surface)
+│   ├── IDLE          (no input, velocity ≈ 0)
+│   ├── WALK          (input, below sprint threshold)
+│   ├── SPRINT        (sprint input + sufficient stamina)
+│   ├── CROUCH        (sub-HSM: enter from Idle/Walk/Sprint)
+│   │   ├── CROUCH_IDLE
+│   │   └── CROUCH_WALK
+│   ├── PRONE         (transition only from Crouch or Slide)
+│   └── SLIDE         (sprint + crouch input on grounded surface)
+│
+├── AIRBORNE  ──────────────────────────────── (parent state — not on walkable surface)
+│   ├── JUMPING       (initial jump phase — upward velocity)
+│   ├── APEX          (near-zero vertical velocity — optional, enables coyote time)
+│   └── FALLING       (negative velocity — beyond jump or fell off edge)
+│
+├── MANTLE    ──────────────────────────────── (animation-driven, input locked)
+├── VAULT     ──────────────────────────────── (animation-driven, input locked)
+├── CLIMBING  ──────────────────────────────── (wall/rope climbing)
+│   ├── CLIMBING_IDLE
+│   └── CLIMBING_MOVING
+├── LADDER    ──────────────────────────────── (axis-restricted movement)
+│   ├── LADDER_IDLE
+│   └── LADDER_MOVING
+└── SWIMMING  ──────────────────────────────── (buoyancy-driven physics)
+    ├── SURFACE_SWIM
+    └── UNDERWATER
+
+TRANSITION RULES (selected critical ones):
+─────────────────────────────────────────
+GROUNDED   → AIRBORNE    : !isGrounded &amp;&amp; !isOnLadder
+AIRBORNE   → GROUNDED    : isGrounded &amp;&amp; landingVelocity within threshold
+SPRINT     → SLIDE       : crouchInput &amp;&amp; currentSpeed &gt; slideMinSpeed
+SLIDE      → CROUCH      : slideVelocity &lt; slideEndThreshold  (smoothly)
+SLIDE      → AIRBORNE    : !isGrounded during slide
+CROUCH     → PRONE       : proneInput &amp;&amp; currentState == CROUCH_IDLE
+AIRBORNE   → MANTLE      : ParkourDetector.DetectMantle() &amp;&amp; mantleInput
+ANY        → DEAD        : MetaStateMachine transition (overrides all)
+</pre>
+
+    <h3>Weapon State Machine (Per WeaponInstance)</h3>
+<pre>
+WeaponStateMachine
+├── HOLSTERED     (not the active weapon)
+├── EQUIPPING     (animation plays, weapon cannot fire)
+├── IDLE          (ready — no user input)
+├── FIRING        (fire rate timer active)
+│   ├── SEMI      (single shot, returns to IDLE)
+│   └── AUTO      (continuous, held)
+├── ADS           (aimed-down-sights, sub-states mirror IDLE/FIRING)
+├── RELOADING     (locked until complete or interrupted)
+│   ├── MAG_OUT
+│   ├── MAG_IN
+│   └── CHAMBER   (for bolt-action/pump variants)
+├── SWITCHING     (weapon swap in progress)
+└── NO_AMMO       (visual/audio feedback, prevents FIRING entry)
+</pre>
+
+    <h3>State Machine Implementation Notes</h3>
+    <ul>
+      <li><strong>Each state is a class</strong> implementing <code>IState</code> with <code>Enter()</code>, <code>Tick(float dt)</code>, <code>Exit()</code>. No switch statements. No enum-keyed dispatch.</li>
+      <li><strong>Transitions are data</strong> — a <code>StateTransition</code> is a condition predicate + target state. Transitions are evaluated in priority order each tick, not embedded in state logic.</li>
+      <li><strong>State enter/exit emit events</strong> automatically via the base class — AnimationSubsystem and AudioSubsystem react to these events without being called directly.</li>
+      <li><strong>History states</strong> for sub-HSMs — when returning from Vault/Mantle to Grounded, the HSM remembers the last active Grounded sub-state (idle/walk/sprint) and re-enters it.</li>
+      <li><strong>No GameObject.SetActive</strong> in state transitions — state machines operate on data, not on scene graph visibility.</li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 10 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s10">
+    <div class="section-header">
+      <div class="section-num">§ 10</div>
+      <div class="section-header-text">
+        <h2>Development Order</h2>
+        <p>The order that minimises wasted work, validates architecture early, and enables parallel team development.</p>
+      </div>
+    </div>
+
+    <div class="callout accent">
+      <div class="callout-icon">◈</div>
+      <div class="callout-body">
+        <p>The ordering principle: <strong>build the load-bearing infrastructure first, then layer gameplay on top of it.</strong> Every later phase depends on the event bus, interfaces, and input abstraction being solid. Skipping Phase 1 to get visible gameplay faster is the most expensive shortcut in game development.</p>
+      </div>
+    </div>
+
+
+    <h4 style="color:#2eb8a6; margin-bottom:12px">Phase 0 — Framework Infrastructure (Weeks 1–2)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-0">
+        <div class="step-num">01</div>
+        <div class="step-content">
+          <h4>Core Contracts Layer</h4>
+          <p>Define all interfaces, event structs, data structs, enums, and ScriptableObject base classes. Zero game logic. Zero Unity dependency where possible. <span class="why">Nothing downstream can exist without these contracts. They are the shared language of the entire framework — get them right before a single implementation is written.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">02</div>
+        <div class="step-content">
+          <h4>Event Bus</h4>
+          <p>Typed, allocation-free publish/subscribe bus. Struct-based events only. Zero reflection. Zero string keys. Profiling hooks and per-channel debug logging from day one. <span class="why">All inter-subsystem communication depends on this. A slow or poorly-typed event bus becomes a production liability immediately — fix it before anyone depends on it.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">03</div>
+        <div class="step-content">
+          <h4>Service Locator</h4>
+          <p>Simple, scoped service locator. Provides subsystem access to shared framework services without direct coupling. <span class="why">Keeps subsystems decoupled from each other. Not over-engineered — resist adding features that no current use case requires.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">04</div>
+        <div class="step-content">
+          <h4>Subsystem Registry + LifecycleManager</h4>
+          <p>Framework backbone. Manages subsystem registration, initialisation order, and tick routing (Tick / FixedTick / LateTick). <span class="why">Defines the explicit tick ordering: Input → Movement → Combat → Weapon → Camera → Animation → Audio. Every downstream system depends on this contract.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">05</div>
+        <div class="step-content">
+          <h4>PlayerController Skeleton</h4>
+          <p>Coordinator MonoBehaviour — subsystem wiring and lifecycle routing only. No gameplay code whatsoever. Target: under 200 lines total. <span class="why">Sets the architectural precedent. If gameplay logic appears here in week one, it will multiply unchecked throughout the project.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">06</div>
+        <div class="step-content">
+          <h4>State Machine Infrastructure</h4>
+          <p>Base classes: IState&lt;TContext&gt;, StateTransitionTable, HierarchicalStateMachine&lt;T&gt;. No concrete states yet — the scaffolding only. <span class="why">The HSM framework must exist before any movement or weapon states are implemented. Retrofitting it onto flat if/else logic later is expensive.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-0">
+        <div class="step-num">07</div>
+        <div class="step-content">
+          <h4>Debug Overlay + FrameworkLogger</h4>
+          <p>SubsystemMonitor window, per-subsystem log channels (independently togglable), GizmoDrawer scaffolding. Build before any gameplay system. <span class="why">Debug tools built in week one save ten times their cost over the project lifetime. You will need them immediately when the first state machine runs.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--green); margin-bottom:12px">Phase 1 — Locomotion Foundation (Weeks 3–4)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-1">
+        <div class="step-num">08</div>
+        <div class="step-content">
+          <h4>Input System</h4>
+          <p>Unity New Input System adapter → PlayerInputFrame pipeline. Implement HumanInputProvider and NullInputProvider. Write first unit tests. <span class="why">Every other subsystem consumes input. Validates the IInputProvider abstraction seam that multiplayer and AI will later exploit without touching any gameplay code.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-1">
+        <div class="step-num">09</div>
+        <div class="step-content">
+          <h4>Movement System — Core States</h4>
+          <p>MovementHSM with Idle, Walk, Sprint, Jump, Fall super-states. CharacterController integration. <span class="why">The game is unplayable without this. Validates the state machine architecture with manageable scope before adding complex states like swim, climb, or parkour.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-1">
+        <div class="step-num">10</div>
+        <div class="step-content">
+          <h4>Ground Detection + Gravity</h4>
+          <p>Physically correct ground snap, step detection, slope angle limits, and gravity application. <span class="why">Movement feel is decided here. Sloppy ground detection causes jitter and edge cases that compound as more states are added on top.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-1">
+        <div class="step-num">11</div>
+        <div class="step-content">
+          <h4>Camera System — FPS Mode</h4>
+          <p>FPS camera rig. Mouse look, pitch clamp, head bob scaffold. No modifiers yet — baseline only. <span class="why">You need to play-test movement from the correct perspective. Camera and movement are always designed and tuned together.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-1">
+        <div class="step-num">12</div>
+        <div class="step-content">
+          <h4>Animation System — Base Layer</h4>
+          <p>AnimatorProxy setup. Connect movement state machine events to Animator parameters. Basic locomotion blend tree for Idle/Walk/Sprint/Jump. <span class="why">Movement without animation feedback makes gameplay feel broken and slows feel-tuning significantly. Get the bridge working before adding weapon states.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--blue); margin-bottom:12px">Phase 2 — Movement Completeness (Weeks 5–6)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-2">
+        <div class="step-num">13</div>
+        <div class="step-content">
+          <h4>Crouch + Prone States</h4>
+          <p>Extend MovementHSM. Capsule height modification, speed reduction, and transition rules into sub-states. <span class="why">High gameplay value, low risk. Validates that adding new leaf states to the HSM does not break existing ground states — the architecture's first integrity test.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-2">
+        <div class="step-num">14</div>
+        <div class="step-content">
+          <h4>Slide State</h4>
+          <p>Friction-based momentum deceleration from sprint. Transitions cleanly into Crouch on slide-end. SlideConfigSO driven. <span class="why">Tests HSM sub-state transitions and stamina integration together in one flow.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-2">
+        <div class="step-num">15</div>
+        <div class="step-content">
+          <h4>StaminaModule</h4>
+          <p>Stamina pool, consumption rates per state, exhaustion threshold, recovery delay — all configurable via ScriptableObject. <span class="why">Stamina is consumed by movement, dodge, parkour, and climbing simultaneously. Build it once here and expose it as a shared resource via events.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-2">
+        <div class="step-num">16</div>
+        <div class="step-content">
+          <h4>SurfaceDetectionModule</h4>
+          <p>Raycast-based ground material detection mapped to SurfaceDefinitionLibrarySO. Publishes SurfaceChangedEvent on contact change. <span class="why">Both audio footsteps and movement friction depend on surface type. Build it once, let all consumers react via events — no direct dependencies.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-2">
+        <div class="step-num">17</div>
+        <div class="step-content">
+          <h4>FallDamageModule</h4>
+          <p>Track peak downward velocity. On landing, emit a DamageData event into the combat pipeline when the threshold is exceeded. <span class="why">Validates the movement → combat event pipeline for the first time with a real, simple cross-system flow.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-2">
+        <div class="step-num">18</div>
+        <div class="step-content">
+          <h4>Lean State + Camera Modifier</h4>
+          <p>Left/right lean from cover. LeanCameraModifier applies lateral offset to CameraSubsystem via LeanEvent — not a direct call. <span class="why">First real use of the camera modifier stack. Validates that modifiers are additive, independently managed, and do not interfere with each other.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--purple); margin-bottom:12px">Phase 3 — Weapon Foundation + IK (Weeks 7–9)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-3">
+        <div class="step-num">19</div>
+        <div class="step-content">
+          <h4>Weapon System — Core</h4>
+          <p>WeaponManager, fixed WeaponSlot array, WeaponDefinitionSO. Weapons are data definitions until equipped — never GameObjects at rest. <span class="why">The largest subsystem. Establish the composition model (data + modules) now before any modules are added — changing the model later is deeply expensive.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">20</div>
+        <div class="step-content">
+          <h4>FireHandler — Hitscan</h4>
+          <p>Fire pipeline: check state → check ammo → apply spread → raycast → publish WeaponFiredEvent and HitDetectedEvent. No projectiles yet. <span class="why">Hitscan first. Validates the entire fire pipeline, damage event fan-out, and audio/VFX observer chain in the simplest possible form before adding ballistics.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">21</div>
+        <div class="step-content">
+          <h4>AmmoSystem</h4>
+          <p>Clip state per WeaponInstance. Global reserve pools per calibre. Tactical vs. empty reload distinction in AmmoSystem contract. <span class="why">Ammo logic is referenced by fire, reload, UI, and save systems simultaneously. Define it cleanly once rather than patching it across four places.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">22</div>
+        <div class="step-content">
+          <h4>ReloadHandler</h4>
+          <p>Tactical and empty reload paths with per-weapon interruptibility rules defined in WeaponDefinitionSO. <span class="why">Reload is the most animation-coupled weapon flow. Getting the event → animation → complete → refill chain right here prevents fragile timing hacks later.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">23</div>
+        <div class="step-content">
+          <h4>RecoilSystem + Camera Modifier</h4>
+          <p>Per-weapon RecoilProfileSO mathematical model. Publishes RecoilEvent — Camera and AnimationSystem consume it independently. <span class="why">Validates that two independent subsystems (camera visual recoil and animation layer recoil) react to the same event with zero coupling between them.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">24</div>
+        <div class="step-content">
+          <h4>AdsSystem + FOV Modifier</h4>
+          <p>ADS state management, zoom level, sensitivity reduction. FOVModifier driven by AdsStateChangedEvent — not a direct camera call. <span class="why">First compound modifier: ADS affects FOV, spread, weapon sway, and camera simultaneously, all via events. Validates the multi-consumer event model.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-3">
+        <div class="step-num">25</div>
+        <div class="step-content">
+          <h4>WeaponAudioHandler + WeaponVFXHandler</h4>
+          <p>Both are pure event consumers: subscribe to WeaponFiredEvent, ReloadedEvent, EmptyEvent. Never called directly by any other system. <span class="why">Validates the observer pattern at scale. Five or more subsystems react to WeaponFiredEvent with zero coupling between any two of them.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--accent); margin-bottom:12px">Phase 4 — Combat + Polish (Weeks 10–12)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-3">
+        <div class="step-num">26</div>
+        <div class="step-content">
+          <h4>IK System + Procedural Animation</h4>
+          <p>Foot IK on uneven terrain. Hand IK on weapon grip. Aim IK for full-body spine-to-camera tracking. ProceduralAnimationSystem: weapon sway, breathing offset layer. <span class="why">Moved to Phase 3 for full-body FPS. The full skeleton rig requires IK from the moment the player can see their own body — foot placement, hand grips, and camera-driven spine rotation cannot be retrofitted cleanly after the animation system is in use.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">27</div>
+        <div class="step-content">
+          <h4>HealthSystem + DamageProcessor</h4>
+          <p>Damage pipeline: armor → resistance → invincibility frames → apply HP deduction. Publishes HealthChangedEvent and DamageReceivedEvent on completion. <span class="why">Validates the Chain of Responsibility pattern for damage and the cross-entity event model used by every combat system from here forward.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">28</div>
+        <div class="step-content">
+          <h4>HitDetectionSystem</h4>
+          <p>Hitscan and projectile-collision variants per weapon config. Publishes typed HitDetectedEvent into the damage pipeline. <span class="why">Separating hit detection from damage application is critical for multiplayer authority design. Do not merge them.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">29</div>
+        <div class="step-content">
+          <h4>HitReactionSystem + DeathSystem</h4>
+          <p>Hit reactions as discrete states. DeathModule owns the full death state transition — death is a state, never a boolean flag. <span class="why">The death lifecycle fans out to camera, animation, audio, UI, and game layer simultaneously. Validates all event fan-out paths under one flow.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">30</div>
+        <div class="step-content">
+          <h4>MeleeSystem + ComboSystem</h4>
+          <p>Melee hitbox activation, combo timing windows, finisher detection. Combo chain modelled as a flat state machine with configurable timing thresholds. <span class="why">Tests time-window-based state machine design — a different challenge from movement or weapon states and good coverage of the transition system.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">31</div>
+        <div class="step-content">
+          <h4>PlayerAudioSystem</h4>
+          <p>FootstepModule (surface-aware), BreathingModule (stamina-driven), CombatVoiceModule (health events). All purely event-driven. <span class="why">Audio built in isolation against placeholder events is always wrong. Build it now against real event data flowing from real gameplay systems.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-4">
+        <div class="step-num">32</div>
+        <div class="step-content">
+          <h4>Interaction System + UIBridge</h4>
+          <p>IInteractable priority queue, overlap detection, interaction prompt events. UIBridge translates gameplay events to ScriptableObject data channels for HUD. <span class="why">Completes the feedback loop: a player can now interact, see health, ammo, and stamina updates — all without any UI class touching gameplay code.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--red); margin-bottom:12px">Phase 5 — Advanced Systems (Weeks 13–15)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-5">
+        <div class="step-num">33</div>
+        <div class="step-content">
+          <h4>Parkour System</h4>
+          <p>ParkourDetector geometry queries (raycasts + shape casts). Vault, Mantle, Climb as Command-pattern sequences. Separate subsystem from Movement — independently disableable. <span class="why">Parkour geometry detection is complex. Build after core movement is stable so the geometry queries can be validated against real level data.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-5">
+        <div class="step-num">34</div>
+        <div class="step-content">
+          <h4>ProjectileSystem</h4>
+          <p>Pooled projectile lifecycle. Burst-compiled IJobParallelFor + RaycastCommand for multi-projectile weapons. Flyweight definition via WeaponDefinitionSO. <span class="why">Projectiles are the highest-frequency short-lived objects in the framework. Pool-first from the start — retrofitting pooling onto physics projectiles is painful.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-5">
+        <div class="step-num">35</div>
+        <div class="step-content">
+          <h4>Swimming + Ladder States</h4>
+          <p>WATER super-state with SwimSurface, SwimUnderwater, Wade leaf states. Water volume detection, buoyancy, breath metre. VERTICAL Ladder state with axis-restricted movement. <span class="why">Validates HSM super-state extensibility. New super-states are added without modifying any existing state class — this is the open/closed test.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-5">
+        <div class="step-num">36</div>
+        <div class="step-content">
+          <h4>Dodge State</h4>
+          <p>Directional dodge/roll. Invulnerability frames. Stamina burst cost. Housed in EVASIVE super-state. <span class="why">Tests the stamina burst cost pattern and invulnerability frame timing used heavily in action game mechanics — important to get right before content production.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-5">
+        <div class="step-num">37</div>
+        <div class="step-content">
+          <h4>TPS Camera Mode</h4>
+          <p>TPSCameraMode strategy swap. Orbit camera with over-shoulder collision avoidance. Full body visible. Defined FPS→TPS switch protocol. <span class="why">FPS must be solid first. TPS uses the same modifier stack — validates that the Strategy pattern swap changes nothing else in the camera system.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="color:var(--yellow); margin-bottom:12px">Phase 6 — Production Readiness (Weeks 16–18)</h4>
+    <div style="margin-bottom:24px">
+      <div class="dev-step phase-6">
+        <div class="step-num">38</div>
+        <div class="step-content">
+          <h4>Save/Load State Hooks</h4>
+          <p>Identify all authoritative runtime state. Tag with [AuthoritativeState] attribute. Expose a serialisable snapshot interface on every owning subsystem. <span class="why">Retrofitting save/load after release is one of the most painful engineering tasks. The snapshot hooks must exist now before game-layer progression depends on them.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-6">
+        <div class="step-num">39</div>
+        <div class="step-content">
+          <h4>Editor Tools</h4>
+          <p>StateMachineVisualizer (live graph in Editor), WeaponConfigEditor (custom SO inspector), SubsystemMonitor (runtime diagnostics window). <span class="why">Editor tools built during development save their cost every day they exist. Ship them before content production begins — designers depend on them immediately.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-6">
+        <div class="step-num">40</div>
+        <div class="step-content">
+          <h4>Full Test Suite</h4>
+          <p>EditMode: state machine logic, event bus correctness, damage pipeline. PlayMode: movement flow, weapon fire chain, combat lifecycle. <span class="why">Framework code without tests is framework code you cannot refactor safely. Tests are the licence to refactor. Write them now while the intent is clear.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-6">
+        <div class="step-num">41</div>
+        <div class="step-content">
+          <h4>Optimisation Pass</h4>
+          <p>GC allocation audit under Unity Memory Profiler. Object pool coverage verification. Physics raycast batching check. Animator hash cache validation. <span class="why">Performance issues discovered in week 16 are almost always architectural. Fix them before game-specific content makes them load-bearing and immovable.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-6">
+        <div class="step-num">42</div>
+        <div class="step-content">
+          <h4>Multiplayer Boundary Audit</h4>
+          <p>Review all [AuthoritativeState] tags. Document every client-predicted path. Define the NetworkInputProvider implementation contract for the networking team. <span class="why">A boundary audit costs 3–5 engineering days now. Discovering missing authority boundaries under a multiplayer deadline costs months.</span></p>
+        </div>
+      </div>
+      <div class="dev-step phase-6">
+        <div class="step-num">43</div>
+        <div class="step-content">
+          <h4>API Documentation</h4>
+          <p>XML docs on all public interface methods. Architecture guide. Subsystem ownership register. Usage examples for all common extension patterns. <span class="why">Documentation written by the people who built the system is the only accurate documentation. Write it now while the decisions and their reasons are still fresh.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <h3>10.2 Parallel Work Streams</h3>
+    <p>These three streams can run in parallel after Phase 0 is complete. The event bus contracts and interface definitions in Phase 0 are the shared foundation that unblocks all three simultaneously.</p>
+
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th style="color:var(--green)">Stream 1 — Gameplay</th>
+            <th style="color:var(--blue)">Stream 2 — Presentation</th>
+            <th style="color:#2eb8a6">Stream 3 — Systems</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Movement · Combat · Weapon</td>
+            <td>Camera · Animation · VFX</td>
+            <td>Audio · Input · UI · Save</td>
+          </tr>
+          <tr>
+            <td><strong>Lead: Gameplay Engineer</strong></td>
+            <td><strong>Lead: Anim / Camera Engineer</strong></td>
+            <td><strong>Lead: Systems Engineer</strong></td>
+          </tr>
+          <tr>
+            <td colspan="3"><code>Phases 1–3 can overlap across streams once Phase 0 interfaces are locked and reviewed.</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 11 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s11">
+    <div class="section-header">
+      <div class="section-num">§ 11</div>
+      <div class="section-header-text">
+        <h2>Scalability Planning</h2>
+        <p>How the framework accommodates growth without requiring architectural changes.</p>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>Adding a New Game</h4>
+        <ul>
+          <li>Create a new Game.asmdef under Games/[GameName]</li>
+          <li>Create ScriptableObject config assets for all subsystems</li>
+          <li>Extend PlayerEntityBase if game-specific logic needed</li>
+          <li>Inject game-specific IInputProvider variant if needed</li>
+          <li>Zero changes to framework code</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Adding a New Weapon Type</h4>
+        <ul>
+          <li>Create a new WeaponDefinition ScriptableObject</li>
+          <li>Configure module settings in the asset</li>
+          <li>Optional: create a custom module variant implementing IWeaponModule</li>
+          <li>Zero new weapon classes required</li>
+          <li>Zero changes to WeaponSubsystem</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>FPS → TPS Switch (Runtime)</h4>
+        <ul>
+          <li>Call <code>cameraSubsystem.SetMode(CameraMode.TPS)</code></li>
+          <li>AnimationSubsystem listens to mode change event, swaps animation rig</li>
+          <li>WeaponSubsystem adjusts aim calculation for TPS offset</li>
+          <li>Zero structural changes — pure strategy swap</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Multiplayer Integration</h4>
+        <ul>
+          <li>Replace IInputProvider with NetworkInputProvider</li>
+          <li>Wrap Transform writes with INetworkTransform adapter</li>
+          <li>Route DamageEvents through server validation layer</li>
+          <li>All subsystems remain unchanged</li>
+          <li>All gameplay logic remains unchanged</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Adding a New Subsystem</h4>
+        <ul>
+          <li>Define a new interface (e.g., IVehicleSubsystem)</li>
+          <li>Implement it as a class extending PlayerSubsystemBase</li>
+          <li>Register it in PlayerEntity's composition</li>
+          <li>Existing subsystems unaffected</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Adding Movement States</h4>
+        <ul>
+          <li>Create a new state class implementing IState</li>
+          <li>Register it with the appropriate HSM layer</li>
+          <li>Define transitions in/out of the new state</li>
+          <li>Existing states and transitions unaffected</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Versioning &amp; Breaking Change Strategy</h3>
+    <ul>
+      <li><strong>Interface versions</strong> — When an interface must change in a breaking way, create <code>IMovementSubsystem_V2</code> and migrate at controlled cadence. Never silently change an existing interface contract.</li>
+      <li><strong>Event struct versioning</strong> — Add new fields with defaults. Remove fields only in major framework versions with migration guides. Do not rename event structs.</li>
+      <li><strong>ScriptableObject config versioning</strong> — Use Unity's serialization migration hooks. Keep configs additive. Maintain backward compatibility for at least one major version.</li>
+      <li><strong>Assembly definition isolation</strong> — Breaking changes within a subsystem are invisible to other subsystems, because they depend on the interface, not the implementation. This is the primary scalability mechanism.</li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 12 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s12">
+    <div class="section-header">
+      <div class="section-num">§ 12</div>
+      <div class="section-header-text">
+        <h2>Performance Risks</h2>
+        <p>Identified risks, severity, and mitigation strategies. Architectural decisions have performance consequences.</p>
+      </div>
+    </div>
+
+    <div class="risk-item risk-high">
+      <span class="severity-tag sev-high">HIGH RISK</span>
+      <h4>Event Bus Allocation in Hot Paths</h4>
+      <p>If event structs are heap-allocated (classes not structs), or if the event bus uses boxing/unboxing, high-frequency events (per-frame movement updates, per-shot weapon events) will generate garbage and trigger the GC.</p>
+      <p class="mitigation">✓ Mitigation: All event types are value types (structs). Event bus uses generic delegates with struct constraints. Validate with Unity's Memory Profiler before shipping. Reserve EventBus for state transitions and meaningful events — NOT per-frame continuous data.</p>
+    </div>
+
+    <div class="risk-item risk-high">
+      <span class="severity-tag sev-high">HIGH RISK</span>
+      <h4>Physics Query Volume — Surface Detection &amp; Interaction</h4>
+      <p>SurfaceDetectionModule and InteractionDetector both perform raycasts or OverlapSphere queries. If these run every frame naively, a game with 32 networked players performing surface queries generates thousands of physics calls per frame.</p>
+      <p class="mitigation">✓ Mitigation: Surface detection runs only when velocity or surface contact changes. InteractionDetector uses OverlapSphereNonAlloc with a pre-allocated buffer. Physics queries are rate-limited to a configurable interval (e.g., every 3 frames for surface type — surface type rarely changes at 60fps).</p>
+    </div>
+
+    <div class="risk-item risk-medium">
+      <span class="severity-tag sev-medium">MEDIUM RISK</span>
+      <h4>State Machine Transition Overhead</h4>
+      <p>If state transition conditions are evaluated every frame for all states, and if those conditions involve physics queries or expensive computations, the state machine itself becomes a performance cost.</p>
+      <p class="mitigation">✓ Mitigation: Transition conditions must be O(1) — pure data comparisons, no queries. Physics results are cached by the appropriate module and the state machine reads the cache. Transition evaluation is ordered by most-likely-to-fire first (early exit).</p>
+    </div>
+
+    <div class="risk-item risk-medium">
+      <span class="severity-tag sev-medium">MEDIUM RISK</span>
+      <h4>Animator Parameter Writes</h4>
+      <p>Setting Animator parameters by name (string hash lookup) every frame for many parameters is measurably expensive. With complex blend trees and IK layers, this can accumulate.</p>
+      <p class="mitigation">✓ Mitigation: Pre-hash all Animator parameter names at initialization using <code>Animator.StringToHash()</code>. Cache hashes as static int constants. Only write parameters when values change — dirty-flag pattern on all Animator parameter writes in AnimationSubsystem.</p>
+    </div>
+
+    <div class="risk-item risk-medium">
+      <span class="severity-tag sev-medium">MEDIUM RISK</span>
+      <h4>AudioSource Management</h4>
+      <p>Creating/destroying AudioSources for footsteps, weapons, and voice generates garbage and spikes. AudioSource.PlayClipAtPoint is a known offender — it creates a new GameObject.</p>
+      <p class="mitigation">✓ Mitigation: AudioPool maintains a pool of pre-warmed AudioSource components. All audio playback goes through the pool. AudioPool size is tuned per scene type. Never call PlayClipAtPoint anywhere in the framework.</p>
+    </div>
+
+    <div class="risk-item risk-medium">
+      <span class="severity-tag sev-medium">MEDIUM RISK</span>
+      <h4>LINQ and Delegate List Allocation</h4>
+      <p>C# closures, LINQ queries, and delegate list iteration in hot paths (Tick methods) generate garbage. This is particularly dangerous in event bus subscriber management.</p>
+      <p class="mitigation">✓ Mitigation: No LINQ in any Tick() method. Event bus subscriber lists are pre-allocated arrays, not List&lt;T&gt;. Delegate invocation uses cached delegate references. Profiler rule: zero allocations in any method called every frame with more than one player in scene.</p>
+    </div>
+
+    <div class="risk-item risk-low">
+      <span class="severity-tag sev-low">LOW RISK</span>
+      <h4>ScriptableObject Data Channel Write Frequency</h4>
+      <p>UICommsSubsystem writes to SO data channels on events. If events are high-frequency (e.g., continuous stamina drain), UI updates may be more frequent than necessary.</p>
+      <p class="mitigation">✓ Mitigation: Data channels implement change-threshold filtering — only notify if value changed by more than a configurable epsilon. UI elements should also implement dirty-checking before redrawing.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 13 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s13">
+    <div class="section-header">
+      <div class="section-num">§ 13</div>
+      <div class="section-header-text">
+        <h2>Architecture Mistakes To Avoid</h2>
+        <p>The specific failure modes that will make this framework unmaintainable in 12 months. Not theoretical — each is a real trap seen in production.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 1 — PlayerController as a God Object</strong>
+        <p>Any script that starts accumulating fields like <code>isGrounded</code>, <code>isSprinting</code>, <code>currentWeapon</code>, <code>health</code>, <code>animator</code>, <code>audioSource</code>, and <code>camera</code> in the same class is a god object forming. The player controller should contain ONLY subsystem references and lifecycle orchestration. If you find yourself writing gameplay logic in PlayerEntity, it belongs in a subsystem.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 2 — Boolean Flag State Management</strong>
+        <p>Replacing a proper state machine with <code>isGrounded</code>, <code>isJumping</code>, <code>isCrouching</code>, <code>isSprinting</code>, <code>isSliding</code> boolean flags. These are not a state machine. They allow structurally invalid combinations (isJumping &amp;&amp; isSwimming = true simultaneously). They require O(n²) guard clauses. They break instantly when new states are added. Use the HSM.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 3 — Direct Input Reading in Subsystems</strong>
+        <p>Any subsystem calling <code>Input.GetAxis()</code>, <code>Keyboard.current.spaceKey</code>, or <code>playerInput.actions["Jump"]</code> directly. This permanently couples the subsystem to human input, making AI control, replay, and multiplayer require hacking the subsystem internals. All input flows through IInputProvider → PlayerInputFrame, period.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 4 — String-Based Events or Messages</strong>
+        <p>Using <code>SendMessage("OnDamaged")</code>, <code>BroadcastMessage()</code>, or a Dictionary&lt;string, Action&gt; event bus. These have zero compile-time type safety, break silently when method names change, perform reflection at runtime, and are impossible to trace in a debugger. Use typed struct events exclusively.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 5 — Subsystems Referencing Each Other Directly</strong>
+        <p>Writing <code>this.weaponSubsystem = GetComponent&lt;WeaponSubsystem&gt;()</code> inside MovementSubsystem. Or <code>player.CameraSubsystem.ShakeCamera()</code> from inside CombatSubsystem. These create hidden coupling links that make it impossible to replace or test any subsystem in isolation. All cross-subsystem communication goes through the event bus or through PlayerEntity as the mediator.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 6 — Gameplay Logic in AnimationSubsystem</strong>
+        <p>Writing <code>if (currentAmmo == 0) TriggerEmptyAnimation()</code> in the AnimationSubsystem, or making the AnimationSubsystem call into WeaponSubsystem to check state. AnimationSubsystem is a pure reactor. It contains zero gameplay conditionals. It only converts events and state data into Animator parameters. Any gameplay logic found here is in the wrong place.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 7 — Inheritance Hierarchy for Weapons</strong>
+        <p>Building a weapon class hierarchy: <code>BaseWeapon → RangedWeapon → AssaultRifle → M4A1</code>. This is the classic way to paint yourself into a corner. What is the M4A1 with a grenade launcher attached? Where does a knife that can also throw go? Composition over inheritance. Weapons are WeaponInstances assembled from module configurations.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <div class="callout-icon">✕</div>
+      <div class="callout-body">
+        <strong>Mistake 8 — Camera Logic Embedded in Movement</strong>
+        <p>Putting camera rotation, FOV changes, or camera shake inside the MovementSubsystem. Camera and movement are two separate concerns that happen to share player position data. A TPS camera implementation does not require refactoring movement. They must remain separate from the beginning.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠</div>
+      <div class="callout-body">
+        <strong>Mistake 9 — Over-Engineering the Event Bus</strong>
+        <p>Making the event bus support priority ordering, event queuing, cancellation, async dispatch, and network serialization all at once. Start with a simple, fast, synchronous typed event bus. The complexity budget for the event bus should be extremely low — its value is simplicity and type safety, not features. Add capabilities only when a specific requirement demands it.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠</div>
+      <div class="callout-body">
+        <strong>Mistake 10 — Skipping Assembly Definitions</strong>
+        <p>Without .asmdef files, the dependency rules you've designed exist only as a gentleman's agreement in documentation. Within 6 months of production, someone will add a reference "just for now" that violates the dependency map. Assembly definitions enforce the architecture at compile time. They are not optional for a multi-game framework.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 14 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s14">
+    <div class="section-header">
+      <div class="section-num">§ 14</div>
+      <div class="section-header-text">
+        <h2>AAA Best Practices</h2>
+        <p>Engineering standards that separate professional production code from prototype code.</p>
+      </div>
+    </div>
+
+    <h3>Code Quality Standards</h3>
+    <ul>
+      <li><strong>Every subsystem is independently unit-testable</strong> — No subsystem requires a running Unity scene to test its core logic. Input, state machines, damage calculations, weapon fire rate — all testable with mock dependencies in EditMode tests.</li>
+      <li><strong>Zero allocations in hot paths</strong> — Every method called in Tick(), FixedTick(), or LateUpdate() must be profiled for zero GC allocation. This is a shipping requirement, not a recommendation.</li>
+      <li><strong>Interface-first design</strong> — Define the interface before the implementation. The interface is the contract. If you can't define the interface cleanly, the responsibility boundary is wrong.</li>
+      <li><strong>Explicit update order</strong> — PlayerEntity drives the explicit Tick() order: Input → Movement → Weapon → Combat → Camera → Animation → Audio. Never rely on Unity's implicit script execution order for gameplay-critical sequences.</li>
+      <li><strong>No magic numbers</strong> — Every configurable value lives in a ScriptableObject config asset or a constant with a named identifier. No hardcoded values like <code>if (health &lt; 20f)</code> in code.</li>
+    </ul>
+
+    <h3>Debug &amp; Tooling Standards</h3>
+    <ul>
+      <li><strong>Runtime debug visualisation</strong> — Every subsystem provides Gizmo/Handle drawing in the editor. Surface detection raycasts visible. Interaction detection zones visible. State machine current state visible in Inspector. This is not optional — it is how you debug and tune gameplay.</li>
+      <li><strong>Subsystem monitor</strong> — A runtime debug window showing: current state per state machine, event bus message throughput, subsystem enable/disable status, performance budget per subsystem. Built as part of Phase 1.</li>
+      <li><strong>Event bus debug logging</strong> — Every event emission should be optionally loggable with a toggle. Invaluable for debugging state transition issues without a debugger attached.</li>
+      <li><strong>Subsystem hot-reload testing</strong> — Design subsystem enable/disable to be triggerable from the editor at runtime. This allows rapid iteration on disable edge cases without game restarts.</li>
+    </ul>
+
+    <h3>Data Standards</h3>
+    <ul>
+      <li><strong>ScriptableObject configs are the source of truth</strong> — Not hardcoded constants in MonoBehaviours. Not values in prefabs. The config asset is what a designer edits. The code reads from it.</li>
+      <li><strong>Weapon definitions are pure data</strong> — A designer can create a new weapon by duplicating and modifying a WeaponDefinition asset. No programmer involvement required for weapon feel iteration.</li>
+      <li><strong>Platform-variant configs</strong> — Design the config system to support platform overrides. Console vs PC may need different sensitivity defaults, different control scheme defaults. The config architecture should support this from day one.</li>
+    </ul>
+
+    <h3>Team Scalability Standards</h3>
+    <ul>
+      <li><strong>Each subsystem is owned by one engineer</strong> — Clear ownership prevents both orphaned code and contradictory changes. The subsystem interface is the contract between engineers.</li>
+      <li><strong>No subsystem merge conflicts cross-contaminate</strong> — Because subsystems are in separate files (and ideally separate directories), two engineers working on MovementSubsystem and WeaponSubsystem simultaneously never have merge conflicts in each other's files.</li>
+      <li><strong>New team members can contribute in their subsystem without understanding the whole framework</strong> — The subsystem interface is the complete specification for what a new subsystem engineer needs to understand. This is the scalability measure of good architecture.</li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- SECTION 15 -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <section id="s15">
+    <div class="section-header">
+      <div class="section-num">§ 15</div>
+      <div class="section-header-text">
+        <h2>Professional Recommendations</h2>
+        <p>Senior-level strategic guidance on how to execute this architecture successfully over a multi-year production timeline.</p>
+      </div>
+    </div>
+
+    <h3>Before Writing a Single Line of Gameplay Code</h3>
+    <div class="callout good">
+      <div class="callout-icon">✓</div>
+      <div class="callout-body">
+        <strong>Write the interfaces first. All of them. Review them with your team.</strong>
+        <p>Spend a full sprint writing only interfaces, event structs, and the PlayerInputFrame struct. Have every engineer on the team review the interfaces before any implementation begins. The interfaces ARE the architecture. Implementation mistakes are recoverable. Interface design mistakes compound for years.</p>
+      </div>
+    </div>
+
+    <h3>The Seams That Matter Most</h3>
+    <p>Of all the abstraction seams in this architecture, three are load-bearing for future scalability:</p>
+    <ol>
+      <li><strong>IInputProvider</strong> — This single interface is what separates a singleplayer-only framework from a multiplayer-ready one. Do not let anything breach this seam.</li>
+      <li><strong>The Event Bus contract</strong> — All events as value types, all subscriptions type-safe, zero reflection. Every shortcut taken here becomes a performance or maintainability problem at scale.</li>
+      <li><strong>Assembly Definition boundaries</strong> — The only compile-time enforcement of your dependency rules. Without them, dependency rules exist only in documentation that nobody reads in crunch.</li>
+    </ol>
+
+    <h3>What to Build Lean vs What to Over-Engineer</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>System</th><th>Recommendation</th><th>Reason</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Event Bus</td>
+            <td><strong>Keep it lean</strong> — synchronous, typed, no features</td>
+            <td>Complexity here is a liability. Simplicity is the feature.</td>
+          </tr>
+          <tr>
+            <td>State Machines</td>
+            <td><strong>Invest here</strong> — full HSM from the start</td>
+            <td>Retrofitting HSM onto a flat state machine costs more than building it right initially.</td>
+          </tr>
+          <tr>
+            <td>Weapon Modules</td>
+            <td><strong>Invest here</strong> — composition from day one</td>
+            <td>Weapon variety is the content scalability test. Inheritance-based weapons cannot support the variety that production demands.</td>
+          </tr>
+          <tr>
+            <td>Audio System</td>
+            <td><strong>Build early, invest in the pool</strong></td>
+            <td>Audio systems refactored late in production break dozens of things. Build the pool and surface detection correctly in Phase 3, not as post-launch patch.</td>
+          </tr>
+          <tr>
+            <td>Debug tooling</td>
+            <td><strong>Build it in Phase 1</strong></td>
+            <td>Debug tools that exist during development save 10× their build cost in debugging time. Build the SubsystemMonitor before any gameplay code.</td>
+          </tr>
+          <tr>
+            <td>Multiplayer integration</td>
+            <td><strong>Design seams now, implement later</strong></td>
+            <td>IInputProvider and INetworkAdapter need to exist in the architecture from day one. The implementations can wait. Adding seams after the fact requires touching every subsystem.</td>
+          </tr>
+          <tr>
+            <td>ScriptableObject configs</td>
+            <td><strong>Design thoughtfully, not exhaustively</strong></td>
+            <td>Don't try to expose every value on day one. Start with what designers need to tune. Add fields incrementally. Changing SO structure mid-production is manageable if done carefully.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Long-Term Maintenance Philosophy</h3>
+    <ul>
+      <li><strong>Architecture rot is gradual</strong> — The first "just this once" violation of the dependency rules is the one to catch and correct. Every subsequent violation becomes easier to justify. The lead engineer must enforce boundary discipline actively, not just document it.</li>
+      <li><strong>Interfaces evolve — manage it deliberately</strong> — Every interface change should go through a brief impact review. Document why the interface changed. This creates a record of architectural decisions that new team members can read to understand why the system is shaped the way it is.</li>
+      <li><strong>The framework should feel boring to use</strong> — Good infrastructure is invisible. If engineers are frequently fighting the framework, wrestling with its conventions, or inventing workarounds, the architecture has drifted from its users' needs and needs revisiting.</li>
+      <li><strong>Measure the right things</strong> — Test coverage on subsystem unit tests, GC allocation per frame in hot paths, and time-to-integrate a new subsystem are the metrics that tell you if the architecture is healthy. Counting lines of code or number of classes tells you nothing useful.</li>
+    </ul>
+
+    <div class="callout accent">
+      <div class="callout-icon">◈</div>
+      <div class="callout-body">
+        <strong>Final Architect's Note</strong>
+        <p>The hardest thing about this architecture is not building it — it is maintaining the discipline to keep it clean under production pressure. Crunch creates technical debt faster than any other force in game development. The value of this architecture is precisely that its boundaries are enforced structurally (by interfaces and assembly definitions), not just socially (by documentation and code review). Build the structural enforcement in Phase 1. It will pay back its cost every single week of production that follows.</p>
+      </div>
+    </div>
+
+    <hr>
+    <p style="color:var(--text3); font-size:12.5px; font-family:var(--font-mono); text-align:center; padding-top:8px">
+      AAA Player Framework · Architecture Design Document · Pre-Production Phase<br>
+      Sections: 15 · Subsystems: 11 · Patterns Applied: 14 · Phases: 4
+    </p>
+  </section>
+
+</div>
+
+<script>
+const links = document.querySelectorAll('.nav-link');
+const sections = document.querySelectorAll('section[id]');
+
+function updateActive() {
+  let current = '';
+  sections.forEach(s => {
+    const top = s.getBoundingClientRect().top;
+    if (top <= 120) current = s.id;
+  });
+  links.forEach(l => {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+  });
+}
+
+document.querySelector('.content').addEventListener('scroll', updateActive);
+window.addEventListener('scroll', updateActive);
+updateActive();
+
+links.forEach(l => {
+  l.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(l.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</html>

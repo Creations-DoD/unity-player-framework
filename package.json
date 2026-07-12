@@ -1,0 +1,33 @@
+{
+  "name": "com.dod-studio.player-framework",
+  "version": "0.1.0",
+  "displayName": "Player Framework",
+  "description": "Modular, data-driven Unity 6 first-person/third-person player framework with composable subsystems, typed event bus, and hierarchical state machines.",
+  "unity": "6000.0",
+  "unityRelease": "0f1",
+  "documentationUrl": "https://github.com/Creations-DoD/unity-player-framework#readme",
+  "changelogUrl": "https://github.com/Creations-DoD/unity-player-framework/releases",
+  "licensesUrl": "https://github.com/Creations-DoD/unity-player-framework/blob/main/LICENSE",
+  "license": "UNLICENSED",
+  "dependencies": {},
+  "keywords": [
+    "player",
+    "framework",
+    "movement",
+    "combat",
+    "weapon",
+    "camera",
+    "animation",
+    "input",
+    "state-machine",
+    "event-bus"
+  ],
+  "author": {
+    "name": "Creations-DoD",
+    "url": "https://github.com/Creations-DoD"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Creations-DoD/unity-player-framework.git"
+  }
+}

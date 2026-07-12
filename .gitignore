@@ -165,6 +165,14 @@ Thumbs.db
 # ==========================================
 # Large files (Git LFS will handle these)
 # ==========================================
+# ==========================================
+# Local tool config (may contain secrets)
+# ==========================================
+opencode.json
+
+# ==========================================
+# Large files (Git LFS will handle these)
+# ==========================================
 *.png.meta
 *.jpg.meta
 *.jpeg.meta

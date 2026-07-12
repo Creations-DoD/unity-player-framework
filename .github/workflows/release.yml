@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs pull
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          echo "version=$TAG" >> $GITHUB_OUTPUT
+          echo "tag=v$TAG" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --oneline --no-decorate)
+          else
+            COMMITS=$(git log --oneline --no-decorate ${PREV_TAG}..HEAD)
+          fi
+          
+          # Write to output
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Player Framework ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Player Framework ${{ steps.version.outputs.tag }}
+            
+            ### Changes
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### UPM Installation
+            Add to your project's Package Manager via Git URL:
+            ```
+            https://github.com/${{ github.repository }}.git#v${{ steps.version.outputs.tag }}
+            ```
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+
+  validate-release:
+    name: Validate Release Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs pull
+
+      - name: Setup Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: StandaloneLinux64
+
+      - name: Run Edit Mode Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          testMode: EditMode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,91 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs pull
+
+      - name: Setup Unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          targetPlatform: StandaloneLinux64
+          buildMethod: ""
+
+      - name: Run Edit Mode Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          testMode: EditMode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Play Mode Tests
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          testMode: PlayMode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for TODO/FIXME/HACK comments
+        run: |
+          echo "Checking for unresolved TODO/FIXME/HACK comments..."
+          if grep -rn "TODO\|FIXME\|HACK" Assets/Framework/ --include="*.cs" --exclude-dir=Tests; then
+            echo "::warning::Found unresolved TODO/FIXME/HACK comments in framework code"
+          fi
+
+      - name: Check for Debug.Log in framework code
+        run: |
+          echo "Checking for direct Debug.Log usage..."
+          if grep -rn "Debug\.Log\|Debug\.LogWarning\|Debug\.LogError" Assets/Framework/ --include="*.cs" --exclude-dir=Tests --exclude-dir=Debug; then
+            echo "::error::Found direct Debug.Log usage in framework code. Use FrameworkLogger instead."
+            exit 1
+          fi
+
+      - name: Verify .asmdef files exist
+        run: |
+          echo "Checking for required .asmdef files..."
+          for asmdef in "Framework.asmdef" "Framework.Debug.asmdef" "Framework.Shared.asmdef" "Framework.Tests.asmdef"; do
+            if ! find Assets/Framework -name "$asmdef" | grep -q .; then
+              echo "::error::Missing required .asmdef: $asmdef"
+              exit 1
+            fi
+          done
+          echo "All required .asmdef files found."
+
+      - name: Verify package.json exists
+        run: |
+          if [ ! -f "Assets/Framework/package.json" ]; then
+            echo "::error::Missing UPM package.json"
+            exit 1
+          fi
+          echo "package.json found."
