@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unity 6 project structure with URP template
 - Git LFS configuration for binary assets
 - CI/CD workflows (PR validation + release)
-- UPM package definition (`com.studio.player-framework`)
+- UPM package definition (`com.dod-studio.player-framework`)
 - CODEOWNERS and PR template
 - Branch protection on main and develop
 

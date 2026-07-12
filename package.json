@@ -1,5 +1,5 @@
 {
-  "name": "com.studio.player-framework",
+  "name": "com.dod-studio.player-framework",
   "version": "0.1.0",
   "displayName": "Player Framework",
   "description": "Modular, data-driven Unity 6 first-person/third-person player framework with composable subsystems, typed event bus, and hierarchical state machines.",
