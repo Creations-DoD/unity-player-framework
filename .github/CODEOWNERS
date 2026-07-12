@@ -1,0 +1,21 @@
+# ============================================================================
+# CODEOWNERS — Player Framework
+# ============================================================================
+
+# Default owner for everything
+*                               @Creations-DoD
+
+# Framework core
+/Assets/Framework/Player/Core/ @Creations-DoD
+
+# Subsystems
+/Assets/Framework/Player/Subsystems/ @Creations-DoD
+
+# Debug tooling
+/Assets/Framework/Debug/       @Creations-DoD
+
+# Shared utilities
+/Assets/Framework/Shared/      @Creations-DoD
+
+# CI/CD and repo config
+/.github/                      @Creations-DoD
