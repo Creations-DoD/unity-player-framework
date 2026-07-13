@@ -80,6 +80,7 @@ jobs:
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         with:
+          unityVersion: 6000.5.3f1
           targetPlatform: StandaloneLinux64
 
       - name: Run Edit Mode Tests
